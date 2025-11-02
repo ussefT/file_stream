@@ -1,0 +1,26 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% for key,value in files.items()%}
+    {% if key == 'file'%}    
+    <ul>{{key}}</ul>    
+    {% for file in value %}
+    
+        <li>{{file}} </li>
+    
+        {%endfor%}
+    
+    {%else%}
+    <ul>{{key}}</ul>    
+    {%for dir in value%}
+    <li>{{dir}}</li>
+        {%endfor%}
+        {%endif%}
+    {% endfor %}
+    <h1>{{id}}</h1>
+</body>
+</html>
