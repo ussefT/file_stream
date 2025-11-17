@@ -5,100 +5,255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>stream storage</title>
 {%block css%}
-<style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+ <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #f9f9fb;
-      color: #333;
-      line-height: 1.6;
-      padding: 1.5rem;
-      max-width: 900px;
-      margin: 0 auto;
-    }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: #4a5568;
+            line-height: 1.6;
+            padding: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
 
-    h1 {
-      font-weight: 500;
-      font-size: 1.6rem;
-      margin-bottom: 1.5rem;
-      color: #2c3e50;
-      border-bottom: 1px solid #eaeaea;
-      padding-bottom: 0.5rem;
-    }
+        h1 {
+            font-weight: 500;
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem;
+            color: #2d3748;
+            padding-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+        }
 
-    ul {
-      margin-bottom: 2rem;
-      list-style: none;
-    }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
 
-    ul::before {
-      content: attr(data-label);
-      display: block;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: #555;
-      font-size: 1.1rem;
-    }
+        .view-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
 
+        .sort-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
 
+        .control-btn {
+            color: #4a5568;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: #edf2f7;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+        }
 
-    li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid #eee;
-    }
+        .control-btn:hover {
+            background: #cbd5e0;
+        }
 
-    li:last-child {
-      border-bottom: none;
-    }
+        .control-btn.active {
+            background: #4299e1;
+            color: white;
+            border-color: #4299e1;
+        }
 
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
 
+        nav a {
+            color: #4a5568;
+            text-decoration: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            background: #edf2f7;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
 
-    a {
-      color: #3498db;
-      text-decoration: none;
-      font-size: 0.9rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 4px;
-      transition: background-color 0.2s, color 0.2s;
-    }
+        nav a:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
-    a:hover {
-      background-color: #e1f0fa;
-      color: #1a73e8;
-    }
+        ul {
+            margin-bottom: 2rem;
+            list-style: none;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+        }
 
-    @media (max-width: 600px) {
-      body {
-        padding: 1rem;
-      }
+        ul h3 {
+            padding: 1rem 1.25rem;
+            background: #f8fafc;
+            color: #4a5568;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+        }
 
-      h1 {
-        font-size: 1.3rem;
-      }
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.3s ease;
+        }
 
-      li {
-        flex-direction: column;
-        align-items: flex-start;
-      }
+        li:hover {
+            background-color: #f8fafc;
+        }
 
-      a {
-        margin-top: 0.4rem;
-      }
-    }
-  </style>
+        li:last-child {
+            border-bottom: none;
+        }
+
+        /* Grid View Styles */
+        .grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .grid-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .grid-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .grid-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .grid-name {
+            font-size: 0.85rem;
+            word-break: break-word;
+        }
+
+        .grid-actions {
+            margin-top: 0.5rem;
+        }
+
+        a {
+            color: #4299e1;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: #ebf8ff;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 1px solid #bee3f8;
+        }
+
+        a:hover {
+            background: #4299e1;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(66, 153, 225, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .view-controls, .sort-controls {
+                justify-content: center;
+            }
+
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+                padding: 0.8rem 1rem;
+            }
+
+            nav {
+                padding: 0.8rem;
+            }
+
+            li {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
     {%endblock%}
 </head>
 <body>
-{%block body%}
+  <div class="controls">
+        <div class="view-controls">
+            <button class="control-btn active" id="list-view-btn">List View</button>
+            <button class="control-btn" id="grid-view-btn">Grid View</button>
+        </div>
+        <div class="sort-controls">
+            <button class="control-btn active" id="sort-name">Name</button>
+            <button class="control-btn" id="sort-time">Time</button>
+            <button class="control-btn" id="sort-size">Size</button>
+        </div>
+    </div>
 
+  {%block body%}
+
+  <nav>
+  
   {%if path%}
       {%set path_=path.split('/')%}
           {% for i in  path_%}
@@ -108,27 +263,39 @@
           {%endfor%}
 
   {%endif%}
-
+</nav>
   {%for key,value in files.items()%}
       {% if key=='file' and value%}
 
-              <ul>
+              <ul id="directory-list">
                 <h3>File</h3>
+                  
                   {%for file in value | sort%}
                   {% set fi=file.split('/')[-1:]|join('')%}
-                  <li>🗒️{{fi}}</li>
-                  <a href="/play?file={{file}}">Download</a>
+                  
+                  <li>
+                  
+                    <span>🗒️{{fi}}</span>
+                    <a href="/play?file={{file}}">Download</a>
+
+                  </li>
 
                   {%endfor%}
               </ul>
 
       {% elif key=='dir' and value%}
 
-              <ul>  <h3>Directory</h3>
+              <ul id="file-list">
+                <h3>Directory</h3>
               {%for dir in value | sort%}
                     {% set di=dir.split('/')[-1:]|join('')%}
-                  <li>📁{{di}}</li>
+                  <li>
+                  <span>
+                  📁{{di}}
+                  </span>
                   <a href="/dir?{{dir}}">open</a>
+                  </li>
+                  
                   {%endfor%}
               </ul>
 
@@ -138,7 +305,30 @@
 
 {%endblock body%}
 </body>
-<script>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script>
+// === Toggle List/Grid View ===
+$("#toggleView").click(function () {
+    $("#fileContainer").toggleClass("grid-view list-view");
+});
+
+// === Sorting ===
+$("#sortSelect").change(function () {
+    let type = $(this).val(); // name or date
+
+    let items = $(".item").get();
+
+    items.sort(function (a, b) {
+        if (type === "name") {
+            return $(a).data("name").localeCompare($(b).data("name"));
+        } else if (type === "date") {
+            return $(a).data("date") > $(b).data("date") ? -1 : 1;
+        }
+    });
+
+    $("#fileContainer").append(items);
+});
 </script>
 </html>

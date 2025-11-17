@@ -11,22 +11,29 @@ from urllib.parse import unquote
 app=FastAPI()
 
 
+
 # init template
 templates=Jinja2Templates(directory='templates')
+
 
 # main page
 @app.get('/',response_class=HTMLResponse)
 async def read(req:Request):
-    """Get item in path"""
+    """
+    Get item in path
+    """
     files=[file for file in te.getFiles('.')][0]
     return templates.TemplateResponse(
         request=req,name='index.html',context={"files":files,'path':Path('.').absolute().as_posix()}
         )
 
+
 # directory
 @app.get('/dir')
 def dir(req:Request):
-    """Get directory from url and return file, request, path"""
+    """
+    Get directory from url and return file, request, path
+    """
     if req.url.query:
         path=unquote(req.url.query)
         
