@@ -99,35 +99,42 @@
 <body>
 {%block body%}
 
-{%if path%}
-<h1>{{path}}</h1>
-{%endif%}
+  {%if path%}
+      {%set path_=path.split('/')%}
+          {% for i in  path_%}
 
-{%for key,value in files.items()%}
-    {% if key=='file' and value%}
+          <a href='/dir?{{"/".join(path_[:loop.index])}}'>{{path_[:loop.index][loop.index0]}}</a>
 
-             <ul>File
-                {%for file in value | sort%}
-                 {% set fi=file.split('/')[-1:]|join('')%}
-                 <li>🗒️{{fi}}</li>
-                <a href="/play?file={{file}}">Download</a>
+          {%endfor%}
 
-                 {%endfor%}
-            </ul>
+  {%endif%}
 
-    {% elif key=='dir' and value%}
+  {%for key,value in files.items()%}
+      {% if key=='file' and value%}
 
-            <ul>Directory
-            {%for dir in value | sort%}
-                   {% set di=dir.split('/')[-1:]|join('')%}
-                 <li>📁{{di}}</li>
-                <a href="/dir?{{dir}}">open</a>
-                 {%endfor%}
-            </ul>
+              <ul>
+                <h3>File</h3>
+                  {%for file in value | sort%}
+                  {% set fi=file.split('/')[-1:]|join('')%}
+                  <li>🗒️{{fi}}</li>
+                  <a href="/play?file={{file}}">Download</a>
 
-    {%endif%}
+                  {%endfor%}
+              </ul>
 
-{%endfor%}
+      {% elif key=='dir' and value%}
+
+              <ul>  <h3>Directory</h3>
+              {%for dir in value | sort%}
+                    {% set di=dir.split('/')[-1:]|join('')%}
+                  <li>📁{{di}}</li>
+                  <a href="/dir?{{dir}}">open</a>
+                  {%endfor%}
+              </ul>
+
+      {%endif%}
+
+  {%endfor%}
 
 {%endblock body%}
 </body>
