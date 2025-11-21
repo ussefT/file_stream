@@ -4,276 +4,349 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>stream storage</title>
-{%block css%}
-    <style>
-        /* BASE STYLES & RESET */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+    {% block css %}
+        <style>
+            /* BASE STYLES & RESET */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-        :root {
-            --primary-color: #3498db;
-            --primary-hover: #2980b9;
-            --text-color: #333;
-            --text-secondary: #666;
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --border-color: #e1e4e8;
-            --accent-color: #2ecc71;
-            
-            /* Smooth Shadow Variables */
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+            :root {
+                --primary-color: #3498db;
+                --primary-hover: #2980b9;
+                --text-color: #333;
+                --text-secondary: #666;
+                --bg-color: #f0f2f5;
+                --card-bg: #ffffff;
+                --border-color: #e1e4e8;
+                --accent-color: #2ecc71;
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 2rem 1rem;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+                /* Smooth Shadow Variables */
+                --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+                --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
 
-        /* HEADER & CONTROLS */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-            gap: 1rem;
-        }
+            body {
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                line-height: 1.6;
+                padding: 2rem 1rem;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
 
-        h1 {
-            font-weight: 700;
-            font-size: 1.8rem;
-            color: #2c3e50;
-        }
+            /* HEADER & CONTROLS */
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                margin-bottom: 1.5rem;
+                gap: 1rem;
+            }
 
-        /* TOOLBAR STYLES */
-        .toolbar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
+            h1 {
+                font-weight: 700;
+                font-size: 1.8rem;
+                color: #2c3e50;
+            }
 
-        .btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            transition: var(--transition);
-            box-shadow: var(--shadow-sm);
-        }
+            /* TOOLBAR STYLES */
+            .toolbar {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
 
-        .btn:hover, .btn.active {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
+            .btn {
+                padding: 0.5rem 1rem;
+                border: 1px solid var(--border-color);
+                background: var(--card-bg);
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-secondary);
+                transition: var(--transition);
+                box-shadow: var(--shadow-sm);
+            }
 
-        select.btn {
-            appearance: none;
-            padding-right: 2rem;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right .7rem top 50%;
-            background-size: .65rem auto;
-        }
+            .btn:hover, .btn.active {
+                background-color: var(--primary-color);
+                color: white;
+                border-color: var(--primary-color);
+            }
 
-        /* DRIVE SELECTOR (NEW) */
-        .drive-container {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            overflow-x: auto;
-            padding-bottom: 5px; /* Space for scrollbar if needed */
-        }
+            select.btn {
+                appearance: none;
+                padding-right: 2rem;
+                background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+                background-repeat: no-repeat;
+                background-position: right .7rem top 50%;
+                background-size: .65rem auto;
+            }
 
-        .drive-card {
-            flex: 1;
-            min-width: 120px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: 10px;
-            text-decoration: none;
-            color: var(--text-color);
-            border: 2px solid transparent; /* Pre-reserve border space */
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-            cursor: pointer;
-        }
+            /* DRIVE SELECTOR (NEW) */
+            .drive-container {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+                overflow-x: auto;
+                padding-bottom: 5px; /* Space for scrollbar if needed */
+            }
 
-        /* Drive Card Animation */
-        .drive-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-hover);
-        }
+            .drive-card {
+                flex: 1;
+                min-width: 120px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                background: var(--card-bg);
+                padding: 1rem;
+                border-radius: 10px;
+                text-decoration: none;
+                color: var(--text-color);
+                border: 2px solid transparent; /* Pre-reserve border space */
+                box-shadow: var(--shadow-sm);
+                transition: var(--transition);
+                cursor: pointer;
+            }
 
-        /* Active Drive Style */
-        .drive-card.active {
-            border-color: var(--primary-color);
-            background-color: #f0f7fc;
-        }
+            /* Drive Card Animation */
+            .drive-card:hover {
+                transform: translateY(-3px);
+                box-shadow: var(--shadow-hover);
+            }
 
-        .drive-icon {
-            font-size: 1.5rem;
-        }
+            /* Active Drive Style */
+            .drive-card.active {
+                border-color: var(--primary-color);
+                background-color: #f0f7fc;
+            }
 
-        .drive-info {
-            display: flex;
-            flex-direction: column;
-        }
+            .drive-icon {
+                font-size: 1.5rem;
+            }
 
-        .drive-name { font-weight: 700; font-size: 0.95rem; }
-        .drive-label { font-size: 0.75rem; color: #888; }
+            .drive-info {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .drive-name {
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
+
+            .drive-label {
+                font-size: 0.75rem;
+                color: #888;
+            }
 
 
-        /* BREADCRUMBS */
-        .breadcrumbs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            padding: 0.75rem 1rem;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow-sm);
-            align-items: center;
-        }
+            /* BREADCRUMBS */
+            .breadcrumbs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-bottom: 2rem;
+                padding: 0.75rem 1rem;
+                background-color: var(--card-bg);
+                border-radius: 12px;
+                box-shadow: var(--shadow-sm);
+                align-items: center;
+            }
 
-        .breadcrumbs a {
-            font-size: 0.9rem;
-            color: var(--primary-color);
-            text-decoration: none;
-            padding: 0.3rem 0.6rem;
-            border-radius: 6px;
-            transition: background-color 0.2s;
-            font-weight: 500;
-        }
+            .breadcrumbs a {
+                font-size: 0.9rem;
+                color: var(--primary-color);
+                text-decoration: none;
+                padding: 0.3rem 0.6rem;
+                border-radius: 6px;
+                transition: background-color 0.2s;
+                font-weight: 500;
+            }
 
-        .breadcrumbs a:hover { background-color: #e1f0fa; }
-        .breadcrumbs span { color: #ccc; }
+            .breadcrumbs a:hover {
+                background-color: #e1f0fa;
+            }
 
-        /* FILE SECTION & LIST */
-        .file-section { margin-bottom: 2rem; }
-        .section-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+            .breadcrumbs span {
+                color: #ccc;
+            }
 
-        .file-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            transition: var(--transition);
-        }
+            /* FILE SECTION & LIST */
+            .file-section {
+                margin-bottom: 2rem;
+            }
 
-        /* ITEM CARD STYLE */
-        .list-item {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-            border: 1px solid transparent;
-        }
+            .section-title {
+                font-weight: 700;
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
 
-        .list-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-hover);
-            border-color: rgba(52, 152, 219, 0.3);
-        }
+            .file-list {
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                transition: var(--transition);
+            }
 
-        .item-info {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
+            /* ITEM CARD STYLE */
+            .list-item {
+                background: var(--card-bg);
+                border-radius: 12px;
+                padding: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: var(--shadow-sm);
+                transition: var(--transition);
+                border: 1px solid transparent;
+            }
 
-        .item-icon {
-            font-size: 1.5rem;
-            margin-right: 1rem;
-            background: #f8f9fa;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-        }
+            .list-item:hover {
+                transform: translateY(-3px);
+                box-shadow: var(--shadow-hover);
+                border-color: rgba(52, 152, 219, 0.3);
+            }
 
-        .item-details { display: flex; flex-direction: column; }
-        .item-name { font-weight: 600; color: var(--text-color); }
-        .item-meta { font-size: 0.75rem; color: #999; }
+            .item-info {
+                display: flex;
+                align-items: center;
+                flex-grow: 1;
+            }
 
-        /* ACTIONS */
-        .action-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 0.85rem;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            background: #f0f7fc;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
+            .item-icon {
+                font-size: 1.5rem;
+                margin-right: 1rem;
+                background: #f8f9fa;
+                width: 45px;
+                height: 45px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
+            }
 
-        .action-link:hover { background-color: var(--primary-color); color: white; }
-        
-        .action-link.download { color: var(--accent-color); background: #f0fdf4; }
-        .action-link.download:hover { background-color: var(--accent-color); color: white; }
+            .item-details {
+                display: flex;
+                flex-direction: column;
+            }
 
-        /* GRID VIEW */
-        .file-list.grid-view {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 1.5rem;
-        }
-        .file-list.grid-view .list-item {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 1.5rem 1rem;
-            aspect-ratio: 1/1.1;
-            justify-content: center;
-        }
-        .file-list.grid-view .item-info { flex-direction: column; margin-bottom: 1rem; width: 100%; }
-        .file-list.grid-view .item-icon { margin-right: 0; margin-bottom: 0.75rem; width: 60px; height: 60px; font-size: 2rem; }
-        .file-list.grid-view .action-link { width: 100%; text-align: center; }
+            .item-name {
+                font-weight: 600;
+                color: var(--text-color);
+            }
 
-        /* RESPONSIVE */
-        @media (max-width: 600px) {
-            header { flex-direction: column; align-items: flex-start; }
-            .toolbar { width: 100%; justify-content: space-between; }
-            .file-list.grid-view { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-            .drive-container { flex-wrap: nowrap; } /* Allow scrolling on mobile */
-        }
-    </style>
-{%endblock%}
+            .item-meta {
+                font-size: 0.75rem;
+                color: #999;
+            }
+
+            /* ACTIONS */
+            .action-link {
+                color: var(--primary-color);
+                text-decoration: none;
+                font-size: 0.85rem;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                background: #f0f7fc;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+
+            .action-link:hover {
+                background-color: var(--primary-color);
+                color: white;
+            }
+
+            .action-link.download {
+                color: var(--accent-color);
+                background: #f0fdf4;
+            }
+
+            .action-link.download:hover {
+                background-color: var(--accent-color);
+                color: white;
+            }
+
+            /* GRID VIEW */
+            .file-list.grid-view {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .file-list.grid-view .list-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding: 1.5rem 1rem;
+                aspect-ratio: 1/1.1;
+                justify-content: center;
+            }
+
+            .file-list.grid-view .item-info {
+                flex-direction: column;
+                margin-bottom: 1rem;
+                width: 100%;
+            }
+
+            .file-list.grid-view .item-icon {
+                margin-right: 0;
+                margin-bottom: 0.75rem;
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+
+            .file-list.grid-view .action-link {
+                width: 100%;
+                text-align: center;
+            }
+
+            /* RESPONSIVE */
+            @media (max-width: 600px) {
+                header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .toolbar {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+
+                .file-list.grid-view {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 1rem;
+                }
+
+                .drive-container {
+                    flex-wrap: nowrap;
+                }
+
+                /* Allow scrolling on mobile */
+            }
+        </style>
+    {% endblock %}
 </head>
 <body>
-{%block body%}
+{% block body %}
 
-<header>
+    <header>
         <h1>📂 Stream Storage</h1>
-        
+
         <div class="toolbar">
             <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
                 <option value="name">Name (A-Z)</option>
@@ -314,118 +387,118 @@
     </div>
 
     <nav class="breadcrumbs">
-  {%if path%}
-      {%set path_=path.split('/')%}
-          {% for i in  path_%}
+        {% if path %}
+            {% set path_=path.split('/') %}
+            {% for i in  path_ %}
 
-          <a href='/dir?{{"/".join(path_[:loop.index])}}'>{{path_[:loop.index][loop.index0]}}</a>
-/
-          {%endfor%}
+                <a href='/dir?{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
+                /
+            {% endfor %}
 
-  {%endif%}
-  </nav>
-  
-  {%for key,value in files.items()%}
-      {% if key=='file' and value%}
+        {% endif %}
+    </nav>
 
-           <div class="file-section">
-        <h3 class="section-title">Files</h3>
-        <ul class="file-list" id="fileList">
-   
-              
-                  {%for file in value | sort%}
-                  {% set file_=file.split('/')[-1:]|join('')%}
-           <li class="list-item" data-name="{{file_}}" data-timestamp="1700100000">
-                <div class="item-info">
-                      <div class="item-icon">⚙️</div>
-                    <div class="item-details">
-                        <span class="item-name">{{file_}}</span>
-                        <span class="item-meta">Nov 01, 2023</span>
-                    </div>
-                  </div>
-                  <a href="/play?file={{file}}" class="action-link download">Download</a>
-
-                  {%endfor%}
-            
-                  </li>
-              </ul>
-      </div>
-      {% elif key=='dir' and value%}
+    {% for key,value in files.items() %}
+        {% if key=='file' and value %}
 
             <div class="file-section">
-        <h3 class="section-title">Directories</h3>
-        <ul class="file-list" id="dirList">
-               
-              {%for dir in value | sort%}
-                    {% set dir_=dir.split('/')[-1:]|join('')%}
-                  
-                  <li class="list-item" data-name="{{dir_}}" data-timestamp="1700000000">
-                <div class="item-info">
+                <h3 class="section-title">Files</h3>
+                <ul class="file-list" id="fileList">
 
-                  <div class="item-icon">📁</div>
-                   <div class="item-details">
-                        <span class="item-name">{{dir_}}</span>
-                        <span class="item-meta">Nov 14, 2023</span>
-                    </div>
-                    </div>
-                  <a href="/dir?{{dir}}" class="action-link">Open</a>
-                  {%endfor%}
-                  </li>
-              </ul>
 
-</div>
-      {%endif%}
+                    {% for file in value | sort %}
+                        {% set file_=file.split('/')[-1:]|join('') %}
+                        <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
+                        <div class="item-info">
+                            <div class="item-icon">⚙️</div>
+                            <div class="item-details">
+                                <span class="item-name">{{ file_ }}</span>
+                                <span class="item-meta">Nov 01, 2023</span>
+                            </div>
+                        </div>
+                        <a href="/play?file={{ file }}" class="action-link download">Download</a>
 
-  {%endfor%}
+                    {% endfor %}
 
-{%endblock body%}
+                    </li>
+                </ul>
+            </div>
+        {% elif key=='dir' and value %}
+
+            <div class="file-section">
+                <h3 class="section-title">Directories</h3>
+                <ul class="file-list" id="dirList">
+
+                    {% for dir in value | sort %}
+                        {% set dir_=dir.split('/')[-1:]|join('') %}
+
+                        <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700000000">
+                        <div class="item-info">
+
+                            <div class="item-icon">📁</div>
+                            <div class="item-details">
+                                <span class="item-name">{{ dir_ }}</span>
+                                <span class="item-meta">Nov 14, 2023</span>
+                            </div>
+                        </div>
+                        <a href="/dir?{{ dir }}" class="action-link">Open</a>
+                    {% endfor %}
+                    </li>
+                </ul>
+
+            </div>
+        {% endif %}
+
+    {% endfor %}
+
+{% endblock body %}
 </body>
 <script>
-        // 1. VIEW TOGGLE LOGIC
-        function setView(viewType) {
-            const lists = document.querySelectorAll('.file-list');
-            const btnList = document.getElementById('btnList');
-            const btnGrid = document.getElementById('btnGrid');
+    // 1. VIEW TOGGLE LOGIC
+    function setView(viewType) {
+        const lists = document.querySelectorAll('.file-list');
+        const btnList = document.getElementById('btnList');
+        const btnGrid = document.getElementById('btnGrid');
 
-            lists.forEach(list => {
-                if (viewType === 'grid') {
-                    list.classList.add('grid-view');
-                    btnGrid.classList.add('active');
-                    btnList.classList.remove('active');
-                } else {
-                    list.classList.remove('grid-view');
-                    btnList.classList.add('active');
-                    btnGrid.classList.remove('active');
+        lists.forEach(list => {
+            if (viewType === 'grid') {
+                list.classList.add('grid-view');
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+            } else {
+                list.classList.remove('grid-view');
+                btnList.classList.add('active');
+                btnGrid.classList.remove('active');
+            }
+        });
+    }
+
+    // 2. SORTING LOGIC
+    function sortItems(criteria) {
+        const lists = ['dirList', 'fileList']; // IDs of the ULs
+
+        lists.forEach(listId => {
+            const list = document.getElementById(listId);
+            const items = Array.from(list.getElementsByClassName('list-item'));
+
+            items.sort((a, b) => {
+                if (criteria === 'name') {
+                    // Sort by Name (A-Z)
+                    const nameA = a.getAttribute('data-name').toLowerCase();
+                    const nameB = b.getAttribute('data-name').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                } else if (criteria === 'date') {
+                    // Sort by Date (Newest First) - using data-timestamp
+                    const timeA = parseInt(a.getAttribute('data-timestamp'));
+                    const timeB = parseInt(b.getAttribute('data-timestamp'));
+                    return timeB - timeA;
                 }
             });
-        }
 
-        // 2. SORTING LOGIC
-        function sortItems(criteria) {
-            const lists = ['dirList', 'fileList']; // IDs of the ULs
-
-            lists.forEach(listId => {
-                const list = document.getElementById(listId);
-                const items = Array.from(list.getElementsByClassName('list-item'));
-
-                items.sort((a, b) => {
-                    if (criteria === 'name') {
-                        // Sort by Name (A-Z)
-                        const nameA = a.getAttribute('data-name').toLowerCase();
-                        const nameB = b.getAttribute('data-name').toLowerCase();
-                        return nameA.localeCompare(nameB);
-                    } else if (criteria === 'date') {
-                        // Sort by Date (Newest First) - using data-timestamp
-                        const timeA = parseInt(a.getAttribute('data-timestamp'));
-                        const timeB = parseInt(b.getAttribute('data-timestamp'));
-                        return timeB - timeA;
-                    }
-                });
-
-                // Re-append sorted items
-                items.forEach(item => list.appendChild(item));
-            });
-        }
-    </script>
+            // Re-append sorted items
+            items.forEach(item => list.appendChild(item));
+        });
+    }
+</script>
 
 </html>
