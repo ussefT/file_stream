@@ -2,6 +2,7 @@ from pathlib import Path
 from os import name
 import string
 from datetime import datetime
+import stat
 
 def getDisk():
     """
@@ -19,7 +20,7 @@ def getDisk():
     else:
         return [Path('/')]
 
-def gettimeFile(path:Path):
+def getTimeFile(path:Path):
     """
     Get time D M Day_number h:m:s Y
     """
@@ -39,15 +40,27 @@ def getSize(path:Path):
         counter+=1
     return f"{byte:.2f}{size_st[counter]}"
 
+def getPermissionFile(path:Path):
+    path_perm=Path(path).stat()
+    is_readable = bool(path_perm.st_mode & stat.S_IRUSR)
+    is_writable = bool(path_perm.st_mode & stat.S_IWUSR)
+    is_executable = bool(path_perm.st_mode & stat.S_IXUSR)
+    
+    return {'r':is_readable,'w':is_writable,'e':is_executable}
+    
 def getFiles(path: str):
     current = Path(path)
-    files = {'dir': [], 'files': []}
+    files = {'dir': [{'path':'','size':'','time_mod':''}], 'files':[]}
+    
     for file in current.iterdir():
         if Path(file).exists():
             if Path(file).is_dir():
-                files['dir'] = files.get('dir', []) + [Path(file).absolute().as_posix()]
-
+                # files['dir'] = files.get('dir', []) + [Path(file).absolute().as_posix()]
+                files['dir']=files.get('dir',[])+[{'path':Path(file).absolute().as_posix(),'size':getSize(file),'time_mod':getTimeFile(file),'perm':getPermissionFile(file)}]
             else:
-                files['file'] = files.get('file', []) + [Path(file).absolute().as_posix()]
+                # files['file'] = files.get('file', []) + [Path(file).absolute().as_posix()]
+                files['files']=files.get('files',[])+[{'path':Path(file).absolute().as_posix(),'size':getSize(file),'time_mod':getTimeFile(file),'perm':getPermissionFile(file)}]
 
     yield files
+
+print([i for i in getFiles('.')])
