@@ -344,112 +344,115 @@
 <body>
 {% block body %}
 
-    <header>
-        <h1>📂 Stream Storage</h1>
+<header>
+    <h1>📂 Stream Storage</h1>
 
-        <div class="toolbar">
-            <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
-                <option value="name">Name (A-Z)</option>
-                <option value="date">Date Modified</option>
-            </select>
+    <div class="toolbar">
+        <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
+            <option value="name">Name (A-Z)</option>
+            <option value="date">Date Modified</option>
+        </select>
 
-            <button class="btn active" onclick="setView('list')" id="btnList" title="List View">
-                ☰
-            </button>
-            <button class="btn" onclick="setView('grid')" id="btnGrid" title="Grid View">
-                ⊞
-            </button>
-        </div>
-    </header>
-
-    <div class="drive-container">
-        <a href="/dir?C:" class="drive-card active" onclick="selectDrive(event, this)">
-            <div class="drive-icon">💿</div>
-            <div class="drive-info">
-                <span class="drive-name">Local Disk (C:)</span>
-                <span class="drive-label">System</span>
-            </div>
-        </a>
-        <a href="/dir?D:" class="drive-card" onclick="selectDrive(event, this)">
-            <div class="drive-icon">💾</div>
-            <div class="drive-info">
-                <span class="drive-name">Data (D:)</span>
-                <span class="drive-label">Storage</span>
-            </div>
-        </a>
-        <a href="/dir?E:" class="drive-card" onclick="selectDrive(event, this)">
-            <div class="drive-icon">📀</div>
-            <div class="drive-info">
-                <span class="drive-name">Backup (E:)</span>
-                <span class="drive-label">External</span>
-            </div>
-        </a>
+        <button class="btn active" onclick="setView('list')" id="btnList" title="List View">
+            ☰
+        </button>
+        <button class="btn" onclick="setView('grid')" id="btnGrid" title="Grid View">
+            ⊞
+        </button>
     </div>
+</header>
 
-    <nav class="breadcrumbs">
-        {% if path %}
-            {% set path_=path.split('/') %}
-            {% for i in  path_ %}
 
-                <a href='/dir?{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
-                /
+<div class="drive-container">
+    {% if drives %}
+        {% for drive in drvies %}
+            <a href="/dir?{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
+                <div class="drive-icon">💿</div>
+                <div class="drive-info">
+                    <span class="drive-name">Local Disk ({{ drive }})</span>
+                    <span class="drive-label">System</span>
+                </div>
+            </a>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<nav class="breadcrumbs">
+    {% if path %}
+        {% set path_=path.split('/') %}
+        {% for i in  path_ %}
+
+            <a href='/dir?{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
+            /
+        {% endfor %}
+
+    {% endif %}
+</nav>
+
+
+<div class="file-section">
+    <h3 class="section-title">Files</h3>
+    <ul class="file-list" id="fileList">
+        {% for item_list in value %}
+            {% for k,v in item_list.items() %}
+                {% if k=='path' %}
+                    {% set dir_=v.split('/')[-1:]|join('') %}
+                    <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700100000">
+                    <div class="item-info">
+                        <div class="item-icon">📁</div>
+                        <div class="item-details">
+                            <span class="item-name">{{ v }}</span>
+                            <span class="item-meta">
+                                {% if k=='time_mod' %}
+                                    {{ v }}
+                                {% endif %}
+                                </span>
+                        </div>
+                    </div>
+                    <a href="/dir?{{ v }}" class="action-link">Open</a>
+
+                {% endif %}
             {% endfor %}
+        {% endfor %}
 
-        {% endif %}
-    </nav>
-
-    {% for key,value in files.items() %}
-        {% if key=='file' and value %}
-
-            <div class="file-section">
-                <h3 class="section-title">Files</h3>
-                <ul class="file-list" id="fileList">
+        </li>
+    </ul>
+</div>
+{% elif key=='dir' %}
 
 
-                    {% for file in value | sort %}
-                        {% set file_=file.split('/')[-1:]|join('') %}
-                        <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
-                        <div class="item-info">
-                            <div class="item-icon">⚙️</div>
-                            <div class="item-details">
-                                <span class="item-name">{{ file_ }}</span>
-                                <span class="item-meta">Nov 01, 2023</span>
-                            </div>
+<div class="file-section">
+    <h3 class="section-title">Directories</h3>
+    <ul class="file-list" id="dirList">
+        {% for item_list in value %}
+            {% for k,v in item_list.items() %}
+                {% if k=='path' %}
+                    {% set file_=v.split('/')[-1:]|join('') %}
+                    <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
+                    <div class="item-info">
+                        <div class="item-icon">📃</div>
+                        <div class="item-details">
+                            <span class="item-name">{{ file_ }}</span>
+                            <span class="item-meta">
+                                {% if k=='time_mod' %}
+                                    {{ v }}
+                                {% endif %}
+                                </span>
                         </div>
-                        <a href="/play?file={{ file }}" class="action-link download">Download</a>
+                    </div>
+                    <a href="/play?file={{ v }}" class="action-link download">Download</a>
 
-                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
 
-                    </li>
-                </ul>
-            </div>
-        {% elif key=='dir' and value %}
+        </li>
+    </ul>
 
-            <div class="file-section">
-                <h3 class="section-title">Directories</h3>
-                <ul class="file-list" id="dirList">
+</div>
+{% endif %}
 
-                    {% for dir in value | sort %}
-                        {% set dir_=dir.split('/')[-1:]|join('') %}
-
-                        <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700000000">
-                        <div class="item-info">
-
-                            <div class="item-icon">📁</div>
-                            <div class="item-details">
-                                <span class="item-name">{{ dir_ }}</span>
-                                <span class="item-meta">Nov 14, 2023</span>
-                            </div>
-                        </div>
-                        <a href="/dir?{{ dir }}" class="action-link">Open</a>
-                    {% endfor %}
-                    </li>
-                </ul>
-
-            </div>
-        {% endif %}
-
-    {% endfor %}
+{% endfor %}
 
 {% endblock body %}
 </body>

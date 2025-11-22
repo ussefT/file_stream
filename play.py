@@ -22,8 +22,10 @@ async def read(req: Request):
     Get item in path
     """
     files = [file for file in te.getFiles('.')][0]
+    drives = te.getDisk()
     return templates.TemplateResponse(
-        request=req, name='index.html', context={"files": files, 'path': Path('.').absolute().as_posix()}
+        request=req, name='index.html',
+        context={"files": files, 'drives': drives, 'path': Path('.').absolute().as_posix()}
     )
 
 
