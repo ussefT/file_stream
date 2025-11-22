@@ -1,5 +1,5 @@
 from fastapi import FastAPI,Request,HTTPException
-from fastapi.responses import FileResponse,HTMLResponse
+from fastapi.responses import FileResponse,HTMLResponse,JSONResponse
 from pathlib import Path
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +15,19 @@ app=FastAPI()
 # init template
 templates=Jinja2Templates(directory='templates')
 
+@app.middleware("http")
+async def custome_404(req:Request,call_next):
+    try:
+        response=await call_next(req)
+        if response.status_code==404:
+            return JSONResponse(
+                {"error":"Route not found",
+                 "path":req.url.path,
+                 },status_code=404
+            )
+        return response
+    except Exception:
+        raise
 
 # main page
 @app.get('/',response_class=HTMLResponse)
