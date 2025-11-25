@@ -76,3 +76,6 @@ def getFiles(path: str):
                      'perm': getPermissionFile(file)}]
 
     yield files
+
+# print([i for i in getFiles('.')][0])
+print(getDisk())

@@ -364,7 +364,6 @@
 
 
 <div class="drive-container">
-    {% if drives %}
         {% for drive in drvies %}
             <a href="/dir?{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
                 <div class="drive-icon">💿</div>
@@ -374,7 +373,6 @@
                 </div>
             </a>
         {% endfor %}
-    {% endif %}
 </div>
 
 <nav class="breadcrumbs">
@@ -389,70 +387,87 @@
     {% endif %}
 </nav>
 
+{%if files%}
+  {% for key,dict in files.items()%}
+    <div class="file-section">
+       
+                
 
-<div class="file-section">
-    <h3 class="section-title">Files</h3>
+                {%if key=="dir"%}
+                            <h3 class="section-title">{{key.uppercase}}</h3>
+                            <ul class="file-list" id="dirList">
+                        {% for di in dict %}
+                            {% for k,v in di.items() %}
+                                {% if k=='path' %}
+                                    {% set dir_=v.split('/')[-1:]|join('') %}
+                                        <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700100000">
+                                                        <div class="item-info">
+                                                            <div class="item-icon">📁</div>
+                                                                <div class="item-details">
+                                                                    <span class="item-name">{{ dir_ }}</span>
+                                            {%endif%}
+
+                                            {% if k=='time_mod' %}
+                                                                        <span class="item-meta">
+                                        
+                                                                                {{ v }}
+                                                                        
+                                                                        </span>
+                                            {%endif%}
+                                                                </div>
+                                                        </div>
+                                                {% if k=="path"%}    
+                                                    <a href="/dir?{{ v }}" class="action-link">Open</a>
+                                                {%endif%}
+                                        </li>
+                            {%endfor%}
+                        {% endfor %}
+
+                                        
+            </ul>
+    </div>
+
+    {% elif key=='files' %}
+
+
+    <div class="file-section">
+    <h3 class="section-title">{{key.uppercase}}</h3>
     <ul class="file-list" id="fileList">
-        {% for item_list in value %}
-            {% for k,v in item_list.items() %}
-                {% if k=='path' %}
-                    {% set dir_=v.split('/')[-1:]|join('') %}
-                    <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700100000">
-                    <div class="item-info">
-                        <div class="item-icon">📁</div>
-                        <div class="item-details">
-                            <span class="item-name">{{ v }}</span>
-                            <span class="item-meta">
-                                {% if k=='time_mod' %}
-                                    {{ v }}
-                                {% endif %}
-                                </span>
-                        </div>
-                    </div>
-                    <a href="/dir?{{ v }}" class="action-link">Open</a>
+                            {% for dit in dict %}
+                                {% for k,v in dit.items() %}
+                                    {% if k=='path' %}
+                                        {% set file_=v.split('/')[-1:]|join('') %}
+                                        <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
+                                                <div class="item-info">
+                                                    <div class="item-icon">📃</div>
+                                                        <div class="item-details">
+                                                            <span class="item-name">{{ file_ }}</span>
+                                    {%endif%}
+                                                        {% if k=='time_mod' %}
+                                                                        <span class="item-meta">
 
-                {% endif %}
-            {% endfor %}
-        {% endfor %}
+                                                                                {{ v }}
+                                                                            </span>
+                                                        {%endif%}
+                                                        </div>
+                                                </div>
+                                                        {% if k=="path"%}
+                                                            <a href="/play?file={{ v }}" class="action-link download">Download</a>
+                                                        {%endif%}
+                                       </li>
+                                {%endfor%}
+                            {%endfor%}
+                    {% endif %}
+            
+     
 
-        </li>
-    </ul>
-</div>
-{% elif key=='dir' %}
+                                 
+                        </ul>
 
+                </div>
 
-<div class="file-section">
-    <h3 class="section-title">Directories</h3>
-    <ul class="file-list" id="dirList">
-        {% for item_list in value %}
-            {% for k,v in item_list.items() %}
-                {% if k=='path' %}
-                    {% set file_=v.split('/')[-1:]|join('') %}
-                    <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
-                    <div class="item-info">
-                        <div class="item-icon">📃</div>
-                        <div class="item-details">
-                            <span class="item-name">{{ file_ }}</span>
-                            <span class="item-meta">
-                                {% if k=='time_mod' %}
-                                    {{ v }}
-                                {% endif %}
-                                </span>
-                        </div>
-                    </div>
-                    <a href="/play?file={{ v }}" class="action-link download">Download</a>
-
-                {% endif %}
-            {% endfor %}
-        {% endfor %}
-
-        </li>
-    </ul>
-
-</div>
-{% endif %}
-
-{% endfor %}
+   {% endfor %}
+{%endif%}
 
 {% endblock body %}
 </body>

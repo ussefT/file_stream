@@ -42,9 +42,9 @@ def dir(req: Request):
 
             if Path(path).is_dir():
                 files = [file for file in te.getFiles(path)][0]
-
+                drives = te.getDisk()
                 return templates.TemplateResponse(
-                    request=req, name='index.html', context={'files': files, 'request': req
+                    request=req, name='index.html', context={'files': files,'drives':drives, 'request': req
                         , 'path': path})
             else:
                 # if request not directory
