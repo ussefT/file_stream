@@ -405,22 +405,19 @@
                                                             <div class="item-icon">📁</div>
                                                                 <div class="item-details">
                                                                     <span class="item-name">{{ dir_ }}</span>
-                                            {%endif%}
+                                           
 
-                                            {% if k=='time_mod' %}
-                                                                        <span class="item-meta">
-                                        
-                                                                                {{ v }}
-                                                                        
-                                                                        </span>
-                                            {%endif%}
+                                                                             {% if di.get('time_mod') %}
+                                                                                        <span class="item-meta">{{ di.get('time_mod') }}</span>
+                                                                             {% endif %}
                                                                 </div>
                                                         </div>
-                                                {% if k=="path"%}    
                                                     <a href="/dir?{{ v }}" class="action-link">Open</a>
-                                                {%endif%}
+                                               
+                                
                                         </li>
-                            {%endfor%}
+                                         {% endif %}
+                            {% endfor %}
                         {% endfor %}
 
                                         
@@ -442,19 +439,17 @@
                                                     <div class="item-icon">📃</div>
                                                         <div class="item-details">
                                                             <span class="item-name">{{ file_ }}</span>
-                                    {%endif%}
-                                                        {% if k=='time_mod' %}
+                                                        {% if dit.get('time_mod') %}
                                                                         <span class="item-meta">
-
-                                                                                {{ v }}
+                                                                                {{ dit.get('time_mod') }}
                                                                             </span>
                                                         {%endif%}
                                                         </div>
                                                 </div>
-                                                        {% if k=="path"%}
                                                             <a href="/play?file={{ v }}" class="action-link download">Download</a>
-                                                        {%endif%}
+                                                       
                                        </li>
+                                        {%endif%}
                                 {%endfor%}
                             {%endfor%}
                     {% endif %}
