@@ -1,10 +1,12 @@
+from email.header import Header
 from pathlib import Path
 from urllib.parse import unquote
 from fastapi import FastAPI, Request, HTTPException ,Depends
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
+import aiofiles
+from media_type import select_media_type
 from functools import wraps
 import te
 
@@ -68,6 +70,29 @@ def dir(req: Request):
         # if bad url 
         return HTTPException(status_code=400, detail="Bad Request")
 
+# async func for download continuesly files
+async def FileItera(path:str,start:int,end:int):
+    """
+    Iterate over files in path
+    """
+    chunk_size=8192
+    async with aiofiles.open(path,'rb') as file:
+        # seek on start
+        await file.seek(start)
+        # current on start
+        current=start
+        # loop current smaller than end
+        while current <= end:
+            # read size
+            read_size=min(chunk_size,end-current+1)
+            # chunk update
+            chunk = await file.read(read_size)
+
+            if not chunk:
+                break
+
+            yield chunk
+            current+=len(chunk)
 
 # show file
 @app.get('/play')
@@ -75,21 +100,43 @@ def play(req: Request, file: str):
     """
     Exist file, downlaod or stream 
     """
+    print(te.getExt(file))
+    range_header=req.headers.get('Range')
+    # Check file is exist and is File
+    if te.fileExists(file) and te.isFile(file):
 
-    per_to_read=te.getPermissionFile(file).get('r',False)
-    
-    if per_to_read:
-        if file.endswith('.mp4') and file.endswith('.mkv'):
-            
-                return FileResponse(path=file, filename=file.split('/')[-1], media_type="video/mp4")
-                  
-        elif file.endswith('.png') and file.endswith('.png'):
-            
-            pass
-        
+        per_to_read=te.getPermissionFile(file).get('r',False)
+
+        # Permission is reading
+        if per_to_read:
+
+                    file_size=te.getIntsize(file)
+                    if range_header:
+                        start,end=range_header.replace("bytes=","").split("-")
+                        start=int(start)
+                        end=int(end) if end else file_size-1
+
+                        headers={
+                            "Content-Range": f"bytes={start}-{end}",
+                            "Accept-Ranges": "bytes",
+                            "Content-Length": str((end-start)+1)
+                        }
+
+                        media_type=select_media_type(te.getExt(file))
+
+                        return StreamingResponse(
+                            FileItera(file,start,end),
+                            status_code=206,
+                            media_type=media_type,
+                            headers=headers
+                        )
+
+                    return StreamingResponse(
+                        FileItera(file,0,file_size-1)
+                        ,media_type="application/octet-stream",
+                        headers={"Accept-Ranges": "bytes","Content-Length": str(file_size)})
+
         else:
-            
-            return FileResponse(path=file, filename=file.split('/')[-1])
-        
+                    return HTTPException(status_code=403,detail="Not Permission Read File")
     else:
-                return HTTPException(status_code=403,detail="Not Permission Read File")
+        return HTTPException(status_code=404,detail="Not Found")
