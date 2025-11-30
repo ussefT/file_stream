@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 import aiofiles
 from media_type import select_media_type
 import te
+from api import router
 
 # init fastapi
 app = FastAPI()
@@ -13,6 +14,7 @@ app = FastAPI()
 # init template
 templates = Jinja2Templates(directory='templates')
 
+app.include_router(router,prefix="/api")
 
 async def permission_check(path:str='.'):
         if te.getPermissionFile(path).get('r',False):
