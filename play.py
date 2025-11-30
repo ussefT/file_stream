@@ -1,13 +1,10 @@
-from email.header import Header
 from pathlib import Path
 from urllib.parse import unquote
 from fastapi import FastAPI, Request, HTTPException ,Depends
-from fastapi.responses import FileResponse, HTMLResponse,StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import  HTMLResponse,StreamingResponse
 from fastapi.templating import Jinja2Templates
 import aiofiles
 from media_type import select_media_type
-from functools import wraps
 import te
 
 # init fastapi
