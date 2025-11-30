@@ -35,7 +35,7 @@ def getSize(path: Path):
     """
     Get size of file
     """
-    byte = Path(path).stat().st_size
+    byte = getIntsize(path)
     size_st = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
     counter = 0
     while byte >= 1024 and counter < len(size_st) - 1:
@@ -43,6 +43,8 @@ def getSize(path: Path):
         counter += 1
     return f"{byte:.2f}{size_st[counter]}"
 
+def getIntsize(path:Path):
+    return  Path(path).stat().st_size
 
 def getPermissionFile(path: Path):
     path_perm = Path(path).stat()
@@ -56,7 +58,11 @@ def getPermissionFile(path: Path):
 def getExt(path: Path):
     path_ext = Path(path).suffix
     ext = {'py': '🐍'}
+def fileExists(path: Path):
+    return Path(path).exists()
 
+def isFile(path:str):
+    return Path(path).is_file()
 
 def getFiles(path: str):
     current = Path(path)
