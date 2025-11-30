@@ -14,13 +14,13 @@ app = FastAPI()
 templates = Jinja2Templates(directory='templates')
 
 
-def permission_check(path:str='.'):
+async def permission_check(path:str='.'):
         if te.getPermissionFile(path).get('r',False):
-            return HTTPException(status_code=403,detail="No permission to read")
+            return  HTTPException(status_code=403,detail="No permission to read")
         elif te.getPermissionFile(path).get('w',False):
-            return HTTPException(status_code=403,detail="No permission to write")
+            return  HTTPException(status_code=403,detail="No permission to write")
         elif te.getPermissionFile(path).get('e',False):
-            return HTTPException(status_code=403,detail="No permission to execute")
+            return  HTTPException(status_code=403,detail="No permission to execute")
             
 
 # main page
@@ -31,7 +31,7 @@ async def read(request: Request,path:str=Depends(permission_check)):
     """
     files = [file for file in te.getFiles('.')][0]
     drives = te.getDisk()
-    return templates.TemplateResponse(
+    return  templates.TemplateResponse(
         request=request, name='index.html',
         context={"files": files, 'drives': drives, 'path': Path('.').absolute().as_posix()}
     )
@@ -39,7 +39,7 @@ async def read(request: Request,path:str=Depends(permission_check)):
 
 # directory
 @app.get('/dir')
-def dir(req: Request):
+async def dir(req: Request):
     """
     Get directory from url and return file, request, path
     """
@@ -52,21 +52,21 @@ def dir(req: Request):
                 files = [file for file in te.getFiles(path)][0]
                 drives = te.getDisk()
                 
-                return templates.TemplateResponse(
+                return  templates.TemplateResponse(
                     request=req, name='index.html', context={'files': files,'drives':drives, 'request': req
                         , 'path': path})
                 
             else:
                 # if request not directory
-                return HTTPException(status_code=406, detail="This file not dir")
+                return  HTTPException(status_code=406, detail="This file not dir")
 
         else:
             # if not exist file
-            return HTTPException(status_code=404, detail="Not found")
+            return  HTTPException(status_code=404, detail="Not found")
 
     else:
         # if bad url 
-        return HTTPException(status_code=400, detail="Bad Request")
+        return  HTTPException(status_code=400, detail="Bad Request")
 
 # async func for download continuesly files
 async def FileItera(path:str,start:int,end:int):
@@ -94,23 +94,22 @@ async def FileItera(path:str,start:int,end:int):
 
 # show file
 @app.get('/play')
-def play(req: Request, file: str):
+async def play(req: Request, file: str):
     """
     Exist file, downlaod or stream 
     """
-    print(te.getExt(file))
-    range_header=req.headers.get('Range')
+    range_header= req.headers.get('Range')
     # Check file is exist and is File
     if te.fileExists(file) and te.isFile(file):
 
-        per_to_read=te.getPermissionFile(file).get('r',False)
+        per_to_read= te.getPermissionFile(file).get('r',False)
 
         # Permission is reading
         if per_to_read:
 
-                    file_size=te.getIntsize(file)
+                    file_size= te.getIntsize(file)
                     if range_header:
-                        start,end=range_header.replace("bytes=","").split("-")
+                        start,end=await range_header.replace("bytes=","").split("-")
                         start=int(start)
                         end=int(end) if end else file_size-1
 
@@ -120,21 +119,21 @@ def play(req: Request, file: str):
                             "Content-Length": str((end-start)+1)
                         }
 
-                        media_type=select_media_type(te.getExt(file))
+                        media_type= select_media_type(te.getExt(file))
 
-                        return StreamingResponse(
+                        return  StreamingResponse(
                             FileItera(file,start,end),
                             status_code=206,
                             media_type=media_type,
                             headers=headers
                         )
 
-                    return StreamingResponse(
+                    return  StreamingResponse(
                         FileItera(file,0,file_size-1)
                         ,media_type="application/octet-stream",
                         headers={"Accept-Ranges": "bytes","Content-Length": str(file_size)})
 
         else:
-                    return HTTPException(status_code=403,detail="Not Permission Read File")
+                    return  HTTPException(status_code=403,detail="Not Permission Read File")
     else:
-        return HTTPException(status_code=404,detail="Not Found")
+        return  HTTPException(status_code=404,detail="Not Found")
