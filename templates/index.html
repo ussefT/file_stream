@@ -4,331 +4,514 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>stream storage</title>
-{%block css%}
- <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
-            color: #4a5568;
-            line-height: 1.6;
-            padding: 1.5rem;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            font-weight: 500;
-            font-size: 1.6rem;
-            margin-bottom: 1.5rem;
-            color: #2d3748;
-            padding-bottom: 0.5rem;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(10px);
-        }
-
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .view-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .sort-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .control-btn {
-            color: #4a5568;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            background: #edf2f7;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            border: 1px solid #e2e8f0;
-            cursor: pointer;
-        }
-
-        .control-btn:hover {
-            background: #cbd5e0;
-        }
-
-        .control-btn.active {
-            background: #4299e1;
-            color: white;
-            border-color: #4299e1;
-        }
-
-        nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        nav a {
-            color: #4a5568;
-            text-decoration: none;
-            padding: 0.4rem 0.8rem;
-            border-radius: 8px;
-            background: #edf2f7;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        nav a:hover {
-            background: #cbd5e0;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        ul {
-            margin-bottom: 2rem;
-            list-style: none;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(10px);
-        }
-
-        ul h3 {
-            padding: 1rem 1.25rem;
-            background: #f8fafc;
-            color: #4a5568;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem 1.25rem;
-            border-bottom: 1px solid #e2e8f0;
-            transition: background-color 0.3s ease;
-        }
-
-        li:hover {
-            background-color: #f8fafc;
-        }
-
-        li:last-child {
-            border-bottom: none;
-        }
-
-        /* Grid View Styles */
-        .grid-view {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-            padding: 1rem;
-        }
-
-        .grid-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 1rem;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-
-        .grid-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .grid-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .grid-name {
-            font-size: 0.85rem;
-            word-break: break-word;
-        }
-
-        .grid-actions {
-            margin-top: 0.5rem;
-        }
-
-        a {
-            color: #4299e1;
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            background: #ebf8ff;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            border: 1px solid #bee3f8;
-        }
-
-        a:hover {
-            background: #4299e1;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(66, 153, 225, 0.3);
-        }
-
-        @media (max-width: 600px) {
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
+    {% block css %}
+        <style>
+            /* BASE STYLES & RESET */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
 
-            .view-controls, .sort-controls {
-                justify-content: center;
+            :root {
+                --primary-color: #3498db;
+                --primary-hover: #2980b9;
+                --text-color: #333;
+                --text-secondary: #666;
+                --bg-color: #f0f2f5;
+                --card-bg: #ffffff;
+                --border-color: #e1e4e8;
+                --accent-color: #2ecc71;
+
+                /* Smooth Shadow Variables */
+                --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+                --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             body {
-                padding: 1rem;
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                line-height: 1.6;
+                padding: 2rem 1rem;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+
+            /* HEADER & CONTROLS */
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                margin-bottom: 1.5rem;
+                gap: 1rem;
             }
 
             h1 {
-                font-size: 1.3rem;
-                padding: 0.8rem 1rem;
+                font-weight: 700;
+                font-size: 1.8rem;
+                color: #2c3e50;
             }
 
-            nav {
-                padding: 0.8rem;
+            /* TOOLBAR STYLES */
+            .toolbar {
+                display: flex;
+                gap: 10px;
+                align-items: center;
             }
 
-            li {
+            .btn {
+                padding: 0.5rem 1rem;
+                border: 1px solid var(--border-color);
+                background: var(--card-bg);
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-secondary);
+                transition: var(--transition);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .btn:hover, .btn.active {
+                background-color: var(--primary-color);
+                color: white;
+                border-color: var(--primary-color);
+            }
+
+            select.btn {
+                appearance: none;
+                padding-right: 2rem;
+                background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+                background-repeat: no-repeat;
+                background-position: right .7rem top 50%;
+                background-size: .65rem auto;
+            }
+
+            /* DRIVE SELECTOR (NEW) */
+            .drive-container {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+                overflow-x: auto;
+                padding-bottom: 5px; /* Space for scrollbar if needed */
+            }
+
+            .drive-card {
+                flex: 1;
+                min-width: 120px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                background: var(--card-bg);
+                padding: 1rem;
+                border-radius: 10px;
+                text-decoration: none;
+                color: var(--text-color);
+                border: 2px solid transparent; /* Pre-reserve border space */
+                box-shadow: var(--shadow-sm);
+                transition: var(--transition);
+                cursor: pointer;
+            }
+
+            /* Drive Card Animation */
+            .drive-card:hover {
+                transform: translateY(-3px);
+                box-shadow: var(--shadow-hover);
+            }
+
+            /* Active Drive Style */
+            .drive-card.active {
+                border-color: var(--primary-color);
+                background-color: #f0f7fc;
+            }
+
+            .drive-icon {
+                font-size: 1.5rem;
+            }
+
+            .drive-info {
+                display: flex;
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 0.75rem;
             }
 
-            a {
+            .drive-name {
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
+
+            .drive-label {
+                font-size: 0.75rem;
+                color: #888;
+            }
+
+
+            /* BREADCRUMBS */
+            .breadcrumbs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-bottom: 2rem;
+                padding: 0.75rem 1rem;
+                background-color: var(--card-bg);
+                border-radius: 12px;
+                box-shadow: var(--shadow-sm);
+                align-items: center;
+            }
+
+            .breadcrumbs a {
+                font-size: 0.9rem;
+                color: var(--primary-color);
+                text-decoration: none;
+                padding: 0.3rem 0.6rem;
+                border-radius: 6px;
+                transition: background-color 0.2s;
+                font-weight: 500;
+            }
+
+            .breadcrumbs a:hover {
+                background-color: #e1f0fa;
+            }
+
+            .breadcrumbs span {
+                color: #ccc;
+            }
+
+            /* FILE SECTION & LIST */
+            .file-section {
+                margin-bottom: 2rem;
+            }
+
+            .section-title {
+                font-weight: 700;
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .file-list {
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                transition: var(--transition);
+            }
+
+            /* ITEM CARD STYLE */
+            .list-item {
+                background: var(--card-bg);
+                border-radius: 12px;
+                padding: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: var(--shadow-sm);
+                transition: var(--transition);
+                border: 1px solid transparent;
+            }
+
+            .list-item:hover {
+                transform: translateY(-3px);
+                box-shadow: var(--shadow-hover);
+                border-color: rgba(52, 152, 219, 0.3);
+            }
+
+            .item-info {
+                display: flex;
+                align-items: center;
+                flex-grow: 1;
+            }
+
+            .item-icon {
+                font-size: 1.5rem;
+                margin-right: 1rem;
+                background: #f8f9fa;
+                width: 45px;
+                height: 45px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
+            }
+
+            .item-details {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .item-name {
+                font-weight: 600;
+                color: var(--text-color);
+            }
+
+            .item-meta {
+                font-size: 0.75rem;
+                color: #999;
+            }
+
+            /* ACTIONS */
+            .action-link {
+                color: var(--primary-color);
+                text-decoration: none;
+                font-size: 0.85rem;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                background: #f0f7fc;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+
+            .action-link:hover {
+                background-color: var(--primary-color);
+                color: white;
+            }
+
+            .action-link.download {
+                color: var(--accent-color);
+                background: #f0fdf4;
+            }
+
+            .action-link.download:hover {
+                background-color: var(--accent-color);
+                color: white;
+            }
+
+            /* GRID VIEW */
+            .file-list.grid-view {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .file-list.grid-view .list-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding: 1.5rem 1rem;
+                aspect-ratio: 1/1.1;
+                justify-content: center;
+            }
+
+            .file-list.grid-view .item-info {
+                flex-direction: column;
+                margin-bottom: 1rem;
+                width: 100%;
+            }
+
+            .file-list.grid-view .item-icon {
+                margin-right: 0;
+                margin-bottom: 0.75rem;
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+
+            .file-list.grid-view .action-link {
                 width: 100%;
                 text-align: center;
             }
-        }
-    </style>
-    {%endblock%}
+
+            /* RESPONSIVE */
+            @media (max-width: 600px) {
+                header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .toolbar {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+
+                .file-list.grid-view {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 1rem;
+                }
+
+                .drive-container {
+                    flex-wrap: nowrap;
+                }
+
+                /* Allow scrolling on mobile */
+            }
+        </style>
+    {% endblock %}
 </head>
 <body>
-  <div class="controls">
-        <div class="view-controls">
-            <button class="control-btn active" id="list-view-btn">List View</button>
-            <button class="control-btn" id="grid-view-btn">Grid View</button>
-        </div>
-        <div class="sort-controls">
-            <button class="control-btn active" id="sort-name">Name</button>
-            <button class="control-btn" id="sort-time">Time</button>
-            <button class="control-btn" id="sort-size">Size</button>
-        </div>
+{% block body %}
+
+<header>
+    <h1>📂 Stream Storage</h1>
+
+    <div class="toolbar">
+        <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
+            <option value="name">Name (A-Z)</option>
+            <option value="date">Date Modified</option>
+        </select>
+
+        <button class="btn active" onclick="setView('list')" id="btnList" title="List View">
+            ☰
+        </button>
+        <button class="btn" onclick="setView('grid')" id="btnGrid" title="Grid View">
+            ⊞
+        </button>
+    </div>
+</header>
+
+
+<div class="drive-container">
+        {% for drive in drvies %}
+            <a href="/dir?{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
+                <div class="drive-icon">💿</div>
+                <div class="drive-info">
+                    <span class="drive-name">Local Disk ({{ drive }})</span>
+                    <span class="drive-label">System</span>
+                </div>
+            </a>
+        {% endfor %}
+</div>
+
+<nav class="breadcrumbs">
+    {% if path %}
+        {% set path_=path.split('/') %}
+        {% for i in  path_ %}
+
+            <a href='/dir?{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
+            /
+        {% endfor %}
+
+    {% endif %}
+</nav>
+
+{%if files%}
+  {% for key,dict in files.items()%}
+    <div class="file-section">
+       
+                
+
+                {%if key=="dir"%}
+                            <h3 class="section-title">{{key.uppercase}}</h3>
+                            <ul class="file-list" id="dirList">
+                        {% for di in dict %}
+                            {% for k,v in di.items() %}
+                                {% if k=='path' %}
+                                    {% set dir_=v.split('/')[-1:]|join('') %}
+                                        <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700100000">
+                                                        <div class="item-info">
+                                                            <div class="item-icon">📁</div>
+                                                                <div class="item-details">
+                                                                    <span class="item-name">{{ dir_ }}</span>
+                                           
+
+                                                                             {% if di.get('time_mod') %}
+                                                                                        <span class="item-meta">{{ di.get('time_mod') }}</span>
+                                                                             {% endif %}
+                                                                </div>
+                                                        </div>
+                                                    <a href="/dir?{{ v }}" class="action-link">Open</a>
+                                               
+                                
+                                        </li>
+                                         {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+
+                                        
+            </ul>
     </div>
 
-  {%block body%}
+    {% elif key=='files' %}
 
-  <nav>
-  
-  {%if path%}
-      {%set path_=path.split('/')%}
-          {% for i in  path_%}
 
-          <a href='/dir?{{"/".join(path_[:loop.index])}}'>{{path_[:loop.index][loop.index0]}}</a>
+    <div class="file-section">
+    <h3 class="section-title">{{key.uppercase}}</h3>
+    <ul class="file-list" id="fileList">
+                            {% for dit in dict %}
+                                {% for k,v in dit.items() %}
+                                    {% if k=='path' %}
+                                        {% set file_=v.split('/')[-1:]|join('') %}
+                                        <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
+                                                <div class="item-info">
+                                                    <div class="item-icon">📃</div>
+                                                        <div class="item-details">
+                                                            <span class="item-name">{{ file_ }}</span>
+                                                        {% if dit.get('time_mod') %}
+                                                                        <span class="item-meta">
+                                                                                {{ dit.get('time_mod') }}
+                                                                            </span>
+                                                        {%endif%}
+                                                        </div>
+                                                </div>
+                                                            <a href="/play?file={{ v }}" class="action-link download">Download</a>
+                                                       
+                                       </li>
+                                        {%endif%}
+                                {%endfor%}
+                            {%endfor%}
+                    {% endif %}
+            
+     
 
-          {%endfor%}
+                                 
+                        </ul>
 
-  {%endif%}
-</nav>
-  {%for key,value in files.items()%}
-      {% if key=='file' and value%}
+                </div>
 
-              <ul id="directory-list">
-                <h3>File</h3>
-                  
-                  {%for file in value | sort%}
-                  {% set fi=file.split('/')[-1:]|join('')%}
-                  
-                  <li>
-                  
-                    <span>🗒️{{fi}}</span>
-                    <a href="/play?file={{file}}">Download</a>
+   {% endfor %}
+{%endif%}
 
-                  </li>
-
-                  {%endfor%}
-              </ul>
-
-      {% elif key=='dir' and value%}
-
-              <ul id="file-list">
-                <h3>Directory</h3>
-              {%for dir in value | sort%}
-                    {% set di=dir.split('/')[-1:]|join('')%}
-                  <li>
-                  <span>
-                  📁{{di}}
-                  </span>
-                  <a href="/dir?{{dir}}">open</a>
-                  </li>
-                  
-                  {%endfor%}
-              </ul>
-
-      {%endif%}
-
-  {%endfor%}
-
-{%endblock body%}
+{% endblock body %}
 </body>
-
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
 <script>
-// === Toggle List/Grid View ===
-$("#toggleView").click(function () {
-    $("#fileContainer").toggleClass("grid-view list-view");
-});
+    // 1. VIEW TOGGLE LOGIC
+    function setView(viewType) {
+        const lists = document.querySelectorAll('.file-list');
+        const btnList = document.getElementById('btnList');
+        const btnGrid = document.getElementById('btnGrid');
 
-// === Sorting ===
-$("#sortSelect").change(function () {
-    let type = $(this).val(); // name or date
+        lists.forEach(list => {
+            if (viewType === 'grid') {
+                list.classList.add('grid-view');
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+            } else {
+                list.classList.remove('grid-view');
+                btnList.classList.add('active');
+                btnGrid.classList.remove('active');
+            }
+        });
+    }
 
-    let items = $(".item").get();
+    // 2. SORTING LOGIC
+    function sortItems(criteria) {
+        const lists = ['dirList', 'fileList']; // IDs of the ULs
 
-    items.sort(function (a, b) {
-        if (type === "name") {
-            return $(a).data("name").localeCompare($(b).data("name"));
-        } else if (type === "date") {
-            return $(a).data("date") > $(b).data("date") ? -1 : 1;
-        }
-    });
+        lists.forEach(listId => {
+            const list = document.getElementById(listId);
+            const items = Array.from(list.getElementsByClassName('list-item'));
 
-    $("#fileContainer").append(items);
-});
+            items.sort((a, b) => {
+                if (criteria === 'name') {
+                    // Sort by Name (A-Z)
+                    const nameA = a.getAttribute('data-name').toLowerCase();
+                    const nameB = b.getAttribute('data-name').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                } else if (criteria === 'date') {
+                    // Sort by Date (Newest First) - using data-timestamp
+                    const timeA = parseInt(a.getAttribute('data-timestamp'));
+                    const timeB = parseInt(b.getAttribute('data-timestamp'));
+                    return timeB - timeA;
+                }
+            });
+
+            // Re-append sorted items
+            items.forEach(item => list.appendChild(item));
+        });
+    }
 </script>
+
 </html>
