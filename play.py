@@ -108,19 +108,21 @@ async def play(req: Request, file: str):
         if per_to_read:
 
                     file_size= te.getIntsize(file)
+                    media_type= select_media_type(te.getExt(file))
                     if range_header:
-                        start,end=await range_header.replace("bytes=","").split("-")
+                        start,end= range_header.replace("bytes=","").split("-")
                         start=int(start)
                         end=int(end) if end else file_size-1
 
                         headers={
                             "Content-Range": f"bytes={start}-{end}",
                             "Accept-Ranges": "bytes",
-                            "Content-Length": str((end-start)+1)
+                            "Content-Length": str((end-start)+1),
+                            "Content-Disposition":f"attachment; filename={te.fileName(file)}",
                         }
 
-                        media_type= select_media_type(te.getExt(file))
-
+                        
+                        print(media_type)
                         return  StreamingResponse(
                             FileItera(file,start,end),
                             status_code=206,
@@ -128,10 +130,16 @@ async def play(req: Request, file: str):
                             headers=headers
                         )
 
+                    
                     return  StreamingResponse(
                         FileItera(file,0,file_size-1)
-                        ,media_type="application/octet-stream",
-                        headers={"Accept-Ranges": "bytes","Content-Length": str(file_size)})
+                        ,media_type=media_type,
+                        headers={
+                            "Accept-Ranges": "bytes",
+                                 "Content-Length": str(file_size),
+                                 "Content-Disposition":f"attachment; filename={te.fileName(file)}"
+                                 }
+                        )
 
         else:
                     return  HTTPException(status_code=403,detail="Not Permission Read File")

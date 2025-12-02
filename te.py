@@ -64,6 +64,9 @@ def fileExists(path: Path):
 def isFile(path:str):
     return Path(path).is_file()
 
+def fileName(path:Path):
+    return Path(path).name
+
 def getFiles(path: str):
     if getPermissionFile(path).get('r') and fileExists(path):
         
