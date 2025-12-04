@@ -23,7 +23,7 @@ async def permission_check(path:str='.'):
         elif te.getPermissionFile(path).get('e',False):
             return  HTTPException(status_code=403,detail="No permission to execute")
             
-@router.get("/")
+@router.get("/",status_code=200)
 async def welcome(req:Request):
     """
     Welcome page
@@ -31,7 +31,7 @@ async def welcome(req:Request):
     pass
 
 # home page
-@router.get('/home', response_class=HTMLResponse)
+@router.get('/home', response_class=HTMLResponse,status_code=200)
 async def home(request: Request,path:str=Depends(permission_check)):
     """
     Get item in path
@@ -45,7 +45,7 @@ async def home(request: Request,path:str=Depends(permission_check)):
 
 
 # directory
-@router.get('/dir')
+@router.get('/dir',status_code=200)
 async def dir(req: Request):
     """
     Get directory from url and return file, request, path
