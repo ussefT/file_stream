@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from router import router
-
+from router import router as templates
+from api import router as api
 # init fastapi
 app = FastAPI()
 
 # template
-app.include_router(router)
+app.include_router(templates)
 
-router.include_router(router,prefix="/api")
+# json
+app.include_router(api,prefix="/api")
