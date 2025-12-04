@@ -15,7 +15,6 @@ router =APIRouter()
 # init template
 templates = Jinja2Templates(directory='templates')
 
-app.include_router(router,prefix="/api")
 
 async def permission_check(path:str='.'):
         if te.getPermissionFile(path).get('r',False):
@@ -24,7 +23,8 @@ async def permission_check(path:str='.'):
             return  HTTPException(status_code=403,detail="No permission to write")
         elif te.getPermissionFile(path).get('e',False):
             return  HTTPException(status_code=403,detail="No permission to execute")
-            
+
+# welcome
 @router.get("/",status_code=200)
 async def welcome(req:Request):
     """

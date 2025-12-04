@@ -7,4 +7,4 @@ app = FastAPI()
 # template
 app.include_router(router)
 
-
+router.include_router(router,prefix="/api")
