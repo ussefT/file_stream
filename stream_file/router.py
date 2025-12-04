@@ -1,12 +1,13 @@
 from pathlib import Path
 from urllib.parse import unquote
-from fastapi import APIRouter, Request, HTTPException ,Depends
-from fastapi.responses import  HTMLResponse,StreamingResponse
+from fastapi import APIRouter,Request, HTTPException ,Depends,UploadFile,File
+from fastapi.responses import  HTMLResponse,StreamingResponse,RedirectResponse
 from fastapi.templating import Jinja2Templates
 import aiofiles
 from media_type import select_media_type
 import te
-
+import shutil
+from models.files import  ItemFile
 # init fastapi
 router =APIRouter()
 
@@ -152,3 +153,11 @@ async def play(req: Request, file: str):
                     return  HTTPException(status_code=403,detail="Not Permission Read File")
     else:
         return  HTTPException(status_code=404,detail="Not Found")
+    
+    
+@router.post('/uploadFile')
+async def upload_dur(files:ItemFile,):
+    
+    async with open(f"{files.file.name}","wb") as fi:
+        shutil.copyfileobj(files.file,fi)
+    return RedirectResponse(url=f"/dir?{files.path}",status_code=301)
