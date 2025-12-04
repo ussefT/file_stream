@@ -346,7 +346,8 @@
 
 <header>
     <h1>📂 Stream Storage</h1>
-
+    <button class="btn" onclick="openFileDialog()">Upload File</button>
+<input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
     <div class="toolbar">
         <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
             <option value="name">Name (A-Z)</option>
@@ -516,7 +517,55 @@
         });
     }
 
+// Function to trigger the file dialog
+    function openFileDialog() {
+        document.getElementById('fileInput').click();
+    }
 
+    // Function to handle file selection and upload
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return; // Exit if no file selected
+
+        // Get the current path from the breadcrumbs or root if no path
+        let currentPath = '';
+        const breadcrumbs = document.querySelector('.breadcrumbs');
+        if (breadcrumbs && breadcrumbs.querySelector('a:last-of-type')) {
+            // Extract the path from the last breadcrumb link
+            const lastBreadcrumb = breadcrumbs.querySelector('a:last-of-type');
+            const href = lastBreadcrumb.getAttribute('href');
+            currentPath = href.split('?')[1] || '';
+        } else {
+            // Default to root if no breadcrumbs (e.g., on initial page load)
+            currentPath = ''; // Or a default path like 'C:'
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('path', currentPath); // Pass the current path
+
+        // Perform the upload
+        fetch('/uploadFile', { // Adjust the URL if your endpoint is different
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (response.status === 301 || response.status === 200) {
+                // Reload the page to reflect the new file
+                location.reload();
+            } else {
+                console.error('Upload failed:', response.statusText);
+                alert('Upload failed: ' + response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            alert('Upload error: ' + error.message);
+        });
+
+        // Reset the file input
+        event.target.value = '';
+    }
 
 </script>
 
