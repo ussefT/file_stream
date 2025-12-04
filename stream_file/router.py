@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 import aiofiles
 from media_type import select_media_type
 import te
-import shutil
+from random import randint 
 # init fastapi
 router =APIRouter()
 
@@ -158,11 +158,13 @@ async def play(req: Request, file: str):
 async def upload_dur(file:UploadFile=File(...),path:str=Form(...)):
     """Upload file"""
     if te.getPermissionFile(path).get('w') is True:
-        count=1
+        
         full_path=Path(path).joinpath(file.filename)
         if te.fileExists(full_path):
-            count+=1
-        
+            name=te.fileName(full_path)
+            name=name+f"({randint(0,100)})"
+            new_path=Path(full_path).parent
+            full_path=Path(new_path).joinpath(name)
         async with aiofiles.open(f"{full_path}","wb") as chunk:
                 while content:=await file.read(1024):
                     await chunk.write(content)
