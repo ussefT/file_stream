@@ -3,8 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Request,Header
 from fastapi.responses import JSONResponse
 from jose import JWTError,jwt
-
-from te import getFiles
+from utils import getFiles
 
 router=APIRouter()
 

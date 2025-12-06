@@ -365,7 +365,7 @@
 
 <div class="drive-container">
         {% for drive in drvies %}
-            <a href="/dir?{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
+            <a href="/dir/{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
                 <div class="drive-icon">💿</div>
                 <div class="drive-info">
                     <span class="drive-name">Local Disk ({{ drive }})</span>
@@ -380,7 +380,7 @@
         {% set path_=path.split('/') %}
         {% for i in  path_ %}
 
-            <a href='/dir?{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
+            <a href='/dir/{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
             /
         {% endfor %}
 
@@ -412,7 +412,7 @@
                                                                              {% endif %}
                                                                 </div>
                                                         </div>
-                                                    <a href="/dir?{{ v }}" class="action-link">Open</a>
+                                                    <a href="/dir/{{ v }}" class="action-link">Open</a>
                                                
                                 
                                         </li>
@@ -446,7 +446,7 @@
                                                         {%endif%}
                                                         </div>
                                                 </div>
-                                                            <a href="/play?file={{ v }}" class="action-link download">Download</a>
+                                                            <a href="/file/{{ v }}" class="action-link download">Download</a>
                                                        
                                        </li>
                                         {%endif%}

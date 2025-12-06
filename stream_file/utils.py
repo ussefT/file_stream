@@ -67,7 +67,7 @@ def isFile(path:str):
 def fileName(path:Path):
     return Path(path).name
 
-def getFiles(path: str):
+def getFiles(path: str='.'):
     if getPermissionFile(path).get('r') and fileExists(path):
         
         current = Path(path)
