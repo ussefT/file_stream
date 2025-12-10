@@ -97,16 +97,20 @@ async def FileItera(path:str,start:int,end:int):
     """
     Iterate over files in path
     """
-    chunk_size=8192
+    
+    # 64 KB  best for concurrency
+    # 128 KB  best for speed
+    
+    chunk_size=128 * 1024
     async with aiofiles.open(path,'rb') as file:
         # seek on start
         await file.seek(start)
         # current on start
-        current=start
+        byte_remaining=end-start+1
         # loop current smaller than end
-        while current <= end:
+        while byte_remaining>0:
             # read size
-            read_size=min(chunk_size,end-current+1)
+            read_size=min(chunk_size,byte_remaining)
             # chunk update
             chunk = await file.read(read_size)
 
@@ -114,8 +118,10 @@ async def FileItera(path:str,start:int,end:int):
                 break
 
             yield chunk
-            current+=len(chunk)
-
+            
+        # Decrease counter
+        byte_remaining-=len(chunk)
+        
 
 # show file
 @router.get('/file/{full_file:path}'
@@ -145,10 +151,15 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
                             start=int(start)
                             end=int(end) if end else file_size-1
 
+                            # ensure end does not exceed file size
+                            if end >=file_size:
+                                end=file_size-1
+                                
+                            content_lenght=(end-start)+1
                             headers={
-                                "Content-Range": f"bytes={start}-{end}",
+                                "Content-Range": f"bytes={start}-{end}/{file_size}",
                                 "Accept-Ranges": "bytes",
-                                "Content-Length": str((end-start)+1),
+                                "Content-Length": str(content_lenght),
                                 "Content-Disposition":f"attachment; filename={utils.fileName(file)}",
                             }
 
