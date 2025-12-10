@@ -17,14 +17,11 @@ router =APIRouter()
 templates = Jinja2Templates(directory='templates')
 
 
-async def permission_check(path:str='.'):
-        if utils.getPermissionFile(path).get('r',False):
-            return  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="No permission to read")
-        elif utils.getPermissionFile(path).get('w',False):
-            return  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="No permission to write")
-        elif utils.getPermissionFile(path).get('e',False):
-            return  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="No permission to execute")
-
+async def permission_check(permission:dict={"r":"read","w":"write","e":"execution"},path:str='.'):
+        for key,value in permission.items():
+            if utils.getPermissionFile(path).get(key,False) is False:
+                raise  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail=f"No permission to {value}")
+        return path
 
 # welcome
 @router.get("/",status_code=200)
@@ -44,8 +41,9 @@ async def home(request: Request,path:str=Depends(permission_check)):
     """
     Get item in path
     """
-    files = [file for file in utils.getFiles('.')][0]
+    files = [file for file in utils.getFiles(path)][0]
     drives = utils.getDisk()
+    print(files)
     return  templates.TemplateResponse(
         request=request, name='index.html',
         context={"files": files, 'drives': drives, 'path': Path('.').absolute().as_posix()},
@@ -64,9 +62,16 @@ async def dir(req: Request,full_path:str=fastPath(...,description="Full file pat
         path = unquote(full_path)
 
         if Path(path).exists():
-
+            
+            
             if Path(path).is_dir():
+                # Check permission
+                path=await permission_check(path=path,permission={"r":"read"})
+                
+                # iter items in dir
                 files = [file for file in utils.getFiles(path)][0]
+                
+                
                 drives = utils.getDisk()
                 
                 return  templates.TemplateResponse(
@@ -75,15 +80,15 @@ async def dir(req: Request,full_path:str=fastPath(...,description="Full file pat
                 
             else:
                 # if request not directory
-                return  HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="This file not dir")
+                raise  HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="This file not dir")
 
         else:
             # if not exist file
-            return  HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+            raise  HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     else:
         # if bad url 
-        return  HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request")
+        raise  HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request")
 
 
 
@@ -127,12 +132,11 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
         file=unquote(full_file)
         range_header= req.headers.get('Range')
 
+        # check exist file and path is file 
         if utils.fileExists(file) and utils.isFile(file):
-            
-            per_to_read= utils.getPermissionFile(file).get('r',False)
 
-            # Permission is reading
-            if per_to_read:
+                        # full path permission
+                        full_file=await permission_check(path=full_file,permission={"r":"read"})
 
                         file_size= utils.getIntsize(file)
                         media_type= select_media_type(utils.getExt(file))
@@ -149,28 +153,25 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
                             }
 
                             
-                            print(media_type)
                             return  StreamingResponse(
-                                FileItera(file,start,end),
-                                status_code=206,
-                                media_type=media_type,
-                                headers=headers
-                            )
+                                        FileItera(file,start,end),
+                                        status_code=206,
+                                        media_type=media_type,
+                                        headers=headers
+                                    )
 
                         
                         return  StreamingResponse(
                             FileItera(file,0,file_size-1)
                             ,media_type=media_type,
                             headers={
-                                "Accept-Ranges": "bytes",
+                                    "Accept-Ranges": "bytes",
                                     "Content-Length": str(file_size),
                                     "Content-Disposition":f"attachment; filename={utils.fileName(file)}"
                                     }
                             )
 
-            else:
-                        return  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Not permission read file")
         else:
-            return  HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not found")
+            raise  HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not found")
     else:
-        HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bad request")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bad request")
