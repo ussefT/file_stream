@@ -119,8 +119,8 @@ async def FileItera(path:str,start:int,end:int):
 
             yield chunk
             
-        # Decrease counter
-        byte_remaining-=len(chunk)
+            # Decrease counter
+            byte_remaining-=len(chunk)
         
 
 # show file
@@ -155,11 +155,10 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
                             if end >=file_size:
                                 end=file_size-1
                                 
-                            content_lenght=(end-start)+1
                             headers={
                                 "Content-Range": f"bytes={start}-{end}/{file_size}",
                                 "Accept-Ranges": "bytes",
-                                "Content-Length": str(content_lenght),
+                                "Content-Length": str((end-start)+1),
                                 "Content-Disposition":f"attachment; filename={utils.fileName(file)}",
                             }
 
