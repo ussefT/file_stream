@@ -43,7 +43,6 @@ async def home(request: Request,path:str=Depends(permission_check)):
     """
     files = [file for file in utils.getFiles(path)][0]
     drives = utils.getDisk()
-    print(files)
     return  templates.TemplateResponse(
         request=request, name='index.html',
         context={"files": files, 'drives': drives, 'path': Path('.').absolute().as_posix()},
