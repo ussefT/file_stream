@@ -3,7 +3,15 @@ import string
 from datetime import datetime
 from os import name
 from pathlib import Path
+import random
 
+def random_char(n)->str:
+    """Generate character random"""
+    return ''.join(random.choice(string.ascii_letters+string.digits+string.punctuation) for _ in range(n))
+
+def random_digit(n)->str:
+    """Generate digits randim """
+    return ''.join(random.choice(string.digits)for _ in range(n))
 
 def getDisk():
     """

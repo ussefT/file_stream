@@ -1,48 +1,18 @@
-from datetime import timedelta, datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi import Request,Header
 from fastapi.responses import JSONResponse
-from jose import JWTError,jwt
 from utils import getFiles
+from auth.gen_auth import get_token
 
-router=APIRouter()
-
-
-SECRET_KEY = "00"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-# create token base time  
-def create_token(pyalod:dict,expires_minute:int=ACCESS_TOKEN_EXPIRE_MINUTES):
-    to_encode = pyalod.copy()
-    expire=datetime.utcnow() + timedelta(minutes=expires_minute)
-    to_encode.update({"expipre":expire})
-    return jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
-
-# verify token
-def verify_token(authorization:str=Header(None)):
-    if authorization is None:
-        raise HTTPException(status_code=401,detail="Token is missing")
-
-    try:
-        scheme,token=authorization.split()
-        
-        if scheme.lower() !="bearer":
-            raise HTTPException(status_code=401,detail="Invalid auth scheme")
-        
-        payload=jwt.decode(token,SECRET_KEY,algorithms=ALGORITHM)
-        return payload
-    except JWTError:
-        raise HTTPException(status_code=401,detail="Token is expired or invalid")
+router=APIRouter(tags=['API'],prefix="/api")
 
 # show dir json
 @router.get('/dir')
-async def getDir(req:Request,payload=Depends(verify_token)):
-
+async def getDir(req=Depends(get_token)):
+    
     files=[i for i in getFiles('.')]
     return JSONResponse(
-        {"message":files[0],"payload":payload},
+        {"result":req,"message":files[0]},
         status_code=200,
         headers={
             "Content-Type":"application/json",
@@ -55,10 +25,4 @@ async def getDir(req:Request,payload=Depends(verify_token)):
         )
 
 
-# create token
-@router.get('/token')
-async def token(req: Request):
-    return JSONResponse(
-                        content={"token":create_token({"service": "internal"})},
-                        status_code=200
-                        )
+

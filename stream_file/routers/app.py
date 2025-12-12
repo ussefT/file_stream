@@ -10,7 +10,7 @@ import utils
 
 
 # init fastapi
-router =APIRouter()
+router =APIRouter(tags=['template'])
 
 
 # init template
