@@ -229,9 +229,9 @@
         font-size: 1.5rem;
         margin-right: 1rem;
         background: #f8f9fa;
-        min-width: 45px; /* Fixed width so it doesn't shrink */
-        width: 45px;
-        height: 45px;
+        min-width: 36px; /* Fixed width so it doesn't shrink */
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -360,4 +360,128 @@
         .list-item {
             padding: 0.75rem;
         }
+           /* Enforce 2 columns on mobile grid view */
+        .file-list.grid-view {
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 0.75rem;
+        }
+        
+        /* Make list items slightly more compact on mobile */
+        .list-item {
+            padding: 0.6rem; /* Reduced padding for the whole row */
+        }
+
+        /* --- FIX: MAKE BUTTONS COMPACT ON MOBILE --- */
+        .action-link, .btn-more {
+            padding: 0.3rem 0.5rem;  /* Much smaller padding */
+            font-size: 0.75rem;      /* Smaller text (12px) */
+            border-radius: 6px;      /* Tighter corners */
+        }
+
+        .action-group {
+            gap: 0.3rem; /* Bring buttons closer together */
+        }
+
+        /* Optional: Shrink the file icon slightly to save more width */
+        .item-icon {
+            min-width: 36px;
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+            margin-right: 0.5rem;
+        }
     }
+
+/* Wrapper to keep Download and More buttons side-by-side */
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0; /* Prevents buttons from being squashed */
+}
+
+/* The New More Button */
+.btn-more {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-more:hover {
+    background-color: #f0f2f5;
+    color: var(--text-color);
+    border-color: #ccc;
+}
+
+/* --- DIALOG / MODAL STYLES --- */
+dialog {
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: min(400px, 90vw); /* Responsive width */
+    margin: auto; /* Centers it natively */
+    background: var(--card-bg);
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.dialog-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dialog-header h3 {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+    padding: 0 0.5rem;
+}
+
+.close-btn:hover { color: #333; }
+
+.dialog-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.detail-row {
+    font-size: 0.95rem;
+    color: var(--text-color);
+    word-break: break-all; /* Ensures long filenames wrap in the modal */
+}
+
+.detail-row strong {
+    color: var(--text-secondary);
+    width: 100px;
+    display: inline-block;
+}
+
+/* Grid View Adjustment */
+.file-list.grid-view .action-group {
+    width: 100%;
+    justify-content: center;
+}
+

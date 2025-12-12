@@ -98,21 +98,58 @@
                                 {% for k,v in dit.items() %}
                                     {% if k=='path' %}
                                         {% set file_=v.split('/')[-1:]|join('') %}
-                                        <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
-                                                <div class="item-info">
-                                                    <div class="item-icon">📃</div>
-                                                        <div class="item-details">
-                                                            <span class="item-name">{{ file_ }}</span>
-                                                        {% if dit.get('time_mod') %}
-                                                                        <span class="item-meta">
-                                                                                {{ dit.get('time_mod') }}
-                                                                            </span>
-                                                        {%endif%}
-                                                        </div>
-                                                </div>
-                                                            <a href="/file/{{ v }}" class="action-link download">Download</a>
-                                                       
-                                       </li>
+                                       <!-- THE FILE LIST ITEM -->
+<li class="list-item" 
+    data-name="{{ file_ }}" 
+    data-time="{{ dit.get('time_mod', 'N/A') }}"
+    data-size="{{ dit.get('size', 'N/A') }}"
+    data-perm-r="{{ dit.get('perm', {}).get('r') }}"
+    data-perm-w="{{ dit.get('perm', {}).get('w') }}"
+    data-perm-e="{{ dit.get('perm', {}).get('e') }}">
+    
+    <div class="item-info">
+        <div class="item-icon">📃</div>
+        <div class="item-details">
+            <span class="item-name">{{ file_ }}</span>
+            {% if dit.get('time_mod') %}
+                <span class="item-meta">{{ dit.get('time_mod') }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- NEW ACTION GROUP -->
+    <div class="action-group">
+        <a href="/file/{{ v }}" class="action-link download">Download</a>
+        <!-- The More Button -->
+        <button type="button" class="btn-more" onclick="openFileDialog(this)">
+            More
+        </button>
+    </div>
+</li>
+
+<!-- --- ADD THIS ONCE AT THE BOTTOM OF YOUR PAGE (OUTSIDE THE LOOP) --- -->
+<dialog id="fileInfoDialog">
+    <div class="dialog-header">
+        <h3>File Details</h3>
+        <button onclick="closeFileDialog()" class="close-btn">&times;</button>
+    </div>
+    <div class="dialog-content">
+        <div class="detail-row">
+            <strong>Name:</strong> <span id="modal-name"></span>
+        </div>
+        <div class="detail-row">
+            <strong>Size:</strong> <span id="modal-size"></span>
+        </div>
+        <div class="detail-row">
+            <strong>Modified:</strong> <span id="modal-time"></span>
+        </div>
+        <div class="detail-row">
+            <strong>Permissions:</strong> 
+            <span id="modal-perm"></span>
+        </div>
+    </div>
+</dialog>
+
                                         {%endif%}
                                 {%endfor%}
                             {%endfor%}
@@ -130,52 +167,6 @@
 
 {% endblock body %}
 </body>
-<script>
-    // 1. VIEW TOGGLE LOGIC
-    function setView(viewType) {
-        const lists = document.querySelectorAll('.file-list');
-        const btnList = document.getElementById('btnList');
-        const btnGrid = document.getElementById('btnGrid');
-
-        lists.forEach(list => {
-            if (viewType === 'grid') {
-                list.classList.add('grid-view');
-                btnGrid.classList.add('active');
-                btnList.classList.remove('active');
-            } else {
-                list.classList.remove('grid-view');
-                btnList.classList.add('active');
-                btnGrid.classList.remove('active');
-            }
-        });
-    }
-
-    // 2. SORTING LOGIC
-    function sortItems(criteria) {
-        const lists = ['dirList', 'fileList']; // IDs of the ULs
-
-        lists.forEach(listId => {
-            const list = document.getElementById(listId);
-            const items = Array.from(list.getElementsByClassName('list-item'));
-
-            items.sort((a, b) => {
-                if (criteria === 'name') {
-                    // Sort by Name (A-Z)
-                    const nameA = a.getAttribute('data-name').toLowerCase();
-                    const nameB = b.getAttribute('data-name').toLowerCase();
-                    return nameA.localeCompare(nameB);
-                } else if (criteria === 'date') {
-                    // Sort by Date (Newest First) - using data-timestamp
-                    const timeA = parseInt(a.getAttribute('data-timestamp'));
-                    const timeB = parseInt(b.getAttribute('data-timestamp'));
-                    return timeB - timeA;
-                }
-            });
-
-            // Re-append sorted items
-            items.forEach(item => list.appendChild(item));
-        });
-    }
-</script>
+<script src="{{ url_for('static', path='/js/script.js') }}"></script>
 
 </html>
