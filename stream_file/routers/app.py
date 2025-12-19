@@ -1,8 +1,8 @@
 from pathlib import Path
 from urllib.parse import unquote
-from fastapi import APIRouter, Request, HTTPException ,Depends,status
+from fastapi import APIRouter, Request, HTTPException ,Depends,status,UploadFile,Form,File
 from fastapi import Path as fastPath
-from fastapi.responses import  HTMLResponse,StreamingResponse
+from fastapi.responses import  HTMLResponse,StreamingResponse,RedirectResponse
 from fastapi.templating import Jinja2Templates
 import aiofiles
 from media_type import select_media_type
@@ -184,3 +184,20 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
             raise  HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not found")
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bad request")
+    
+    
+@router.post('/uploadFile')
+async def upload_dur(file:UploadFile=File(...),path:str=Form(...)):
+    """Upload file"""
+    if utils.getPermissionFile(path).get('w') is True:
+        
+        full_path=Path(path).joinpath(file.filename)
+        if utils.fileExists(full_path):
+            name=utils.fileName(full_path)
+            # name=name+f"({randint(0,100)})"
+            new_path=Path(full_path).parent
+            full_path=Path(new_path).joinpath(name)
+        async with aiofiles.open(f"{full_path}","wb") as chunk:
+                while content:=await file.read(1024):
+                    await chunk.write(content)
+        return RedirectResponse(url=f"/dir?{path}",status_code=301)
