@@ -361,3 +361,38 @@
             padding: 0.75rem;
         }
     }
+.upload-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(90%, 400px);
+    background: #f0f2f5;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    z-index: 9999;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.upload-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.progress-bar {
+    width: 100%;
+    background: #eee;
+    height: 15px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#progressFill {
+    width: 0%;
+    height: 100%;
+    background: #3498db;
+    transition: width 0.2s ease;
+}
+

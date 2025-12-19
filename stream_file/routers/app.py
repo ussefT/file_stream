@@ -1,11 +1,17 @@
 from pathlib import Path
 from urllib.parse import unquote
-from fastapi import APIRouter, Request, HTTPException ,Depends,status,UploadFile,Form,File
+from os import name
+from fastapi import (
+    APIRouter, Request, HTTPException ,Depends,status,UploadFile,Form,File
+    )
 from fastapi import Path as fastPath
-from fastapi.responses import  HTMLResponse,StreamingResponse,RedirectResponse
+from fastapi.responses import  (
+    HTMLResponse,StreamingResponse
+    )
 from fastapi.templating import Jinja2Templates
 import aiofiles
 from media_type import select_media_type
+from typing import Dict
 import utils
 
 
@@ -17,11 +23,58 @@ router =APIRouter(tags=['template'])
 templates = Jinja2Templates(directory='templates')
 
 
-async def permission_check(permission:dict={"r":"read","w":"write","e":"execution"},path:str='.'):
-        for key,value in permission.items():
-            if utils.getPermissionFile(path).get(key,False) is False:
-                raise  HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail=f"No permission to {value}")
-        return path
+
+async def permission_check(
+    path: str | Path = ".",
+    permission: Dict[str,str] | None = None
+) -> Path:
+    """
+    Check file or directory permissions.
+
+    permission example:
+        {"r": "read", "w": "write", "e": "execute"}
+    """
+    permission = permission or {"r":"read"}
+    path = Path(path)
+
+    if name == 'nt':
+        p_str = str(path)
+        if len(p_str) == 2 and p_str[1] == ':':
+            path = Path(p_str + "/")
+
+    try:
+        exists = path.exists()
+    except (PermissionError, OSError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
+        )
+
+    if not exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Path not found"
+        )
+
+    perms = utils.getPermissionFile(path)
+
+    for key, label in permission.items():
+        if key == "r" and path.is_dir():
+            try:
+                next(path.iterdir(), None)
+            except (PermissionError, OSError, ValueError):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No permission to read"
+                )
+
+        if not perms.get(key, False):
+            action = label if isinstance(label, str) else key
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"No permission to {action}"
+            )
+    return path
 
 # welcome
 @router.get("/",status_code=200)
@@ -41,7 +94,7 @@ async def home(request: Request,path:str=Depends(permission_check)):
     """
     Get item in path
     """
-    files = [file for file in utils.getFiles(path)][0]
+    files=next(utils.getFiles(path))
     drives = utils.getDisk()
     return  templates.TemplateResponse(
         request=request, name='index.html',
@@ -58,17 +111,14 @@ async def dir(req: Request,full_path:str=fastPath(...,description="Full file pat
     **path** send to url
     """
     if full_path:
-        path = unquote(full_path)
+                path = unquote(full_path)
 
-        if Path(path).exists():
-            
-            
-            if Path(path).is_dir():
-                # Check permission
-                path=await permission_check(path=path,permission={"r":"read"})
-                
+                path_result=await permission_check(
+                    path=path,permission={"r":"read"}
+                    )
+
                 # iter items in dir
-                files = [file for file in utils.getFiles(path)][0]
+                files =next(utils.getFiles(path_result))
                 
                 
                 drives = utils.getDisk()
@@ -77,14 +127,7 @@ async def dir(req: Request,full_path:str=fastPath(...,description="Full file pat
                     request=req, name='index.html', context={'files': files,'drives':drives, 'request': req
                         , 'path': path})
                 
-            else:
-                # if request not directory
-                raise  HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="This file not dir")
-
-        else:
-            # if not exist file
-            raise  HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-
+          
     else:
         # if bad url 
         raise  HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request")
@@ -185,19 +228,27 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bad request")
     
-    
+
+ 
 @router.post('/uploadFile')
 async def upload_dur(file:UploadFile=File(...),path:str=Form(...)):
-    """Upload file"""
-    if utils.getPermissionFile(path).get('w') is True:
+        """Upload file"""
+        path = (path or "").strip() or "."
+
+        upload_path=await permission_check(
+            path=path,
+            permission={"w":"write"}
+        )
+
+        if not upload_path.is_dir():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Upload path must be a directory"
+            )
         
-        full_path=Path(path).joinpath(file.filename)
-        if utils.fileExists(full_path):
-            name=utils.fileName(full_path)
-            # name=name+f"({randint(0,100)})"
-            new_path=Path(full_path).parent
-            full_path=Path(new_path).joinpath(name)
-        async with aiofiles.open(f"{full_path}","wb") as chunk:
-                while content:=await file.read(1024):
+        save_path = upload_path / file.filename
+        async with aiofiles.open(str(save_path),"wb") as chunk:
+                while content:=await file.read(1024*1024):
                     await chunk.write(content)
-        return RedirectResponse(url=f"/dir?{path}",status_code=301)
+                    
+        return {"status": "ok", "filename": file.filename, "path": str(upload_path)}

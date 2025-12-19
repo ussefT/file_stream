@@ -1,19 +1,24 @@
 import stat
 import string
 from datetime import datetime
-from os import name
+from os import name, access, R_OK, W_OK, X_OK
 from pathlib import Path
+from typing import Dict,Generator
 import random
 
 def random_char(n)->str:
-    """Generate character random"""
+    """
+    Generate character random
+    """
     return ''.join(random.choice(string.ascii_letters+string.digits+string.punctuation) for _ in range(n))
 
 def random_digit(n)->str:
-    """Generate digits randim """
+    """
+    Generate digits randim
+    """
     return ''.join(random.choice(string.digits)for _ in range(n))
 
-def getDisk():
+def getDisk()->list[Path]:
     """
     Get local disk
     """
@@ -30,14 +35,17 @@ def getDisk():
         return [Path('/')]
 
 
-def getTimeFile(path: Path):
+def getTimeFile(path: Path|str)->str:
     """
     Return human-readable modified time.
     """
-    return datetime.fromtimestamp(Path(path).stat().st_mtime).ctime()
+    try:
+        return datetime.fromtimestamp(Path(path).stat().st_mtime).ctime()
+    except (PermissionError, OSError, ValueError):
+        return ""
 
 
-def getSize(path: Path):
+def getSize(path: Path|str)->str:
     """
     Get size of file
     """
@@ -49,52 +57,130 @@ def getSize(path: Path):
         counter += 1
     return f"{byte:.2f}{size_st[counter]}"
 
-def getIntsize(path:Path):
-    return  Path(path).stat().st_size
+def getIntsize(path:Path|str)->int:
+    """
+    Size of path
+    """
+    try:
+        return Path(path).stat().st_size
+    except (PermissionError, OSError, ValueError):
+        return 0
 
-def getPermissionFile(path: Path):
-    path_perm = Path(path).stat().st_mode
-    is_readable = bool(path_perm & stat.S_IRUSR)
-    is_writable = bool(path_perm & stat.S_IWUSR)
-    is_executable = bool(path_perm & stat.S_IXUSR)
+def getPermissionFile(path: Path|str):
+    """
+    Permission of path
+    """
+    perms = {'r': False, 'w': False, 'e': False}
 
-    return {'r': is_readable, 'w': is_writable, 'e': is_executable}
+    try:
+        path_obj = Path(path)
+
+        if not path_obj.exists():
+            return perms
+
+        if name == 'nt':
+            path_str = str(path_obj)
+            perms['r'] = access(path_str, R_OK)
+            perms['w'] = access(path_str, W_OK)
+            perms['e'] = access(path_str, X_OK)
+            return perms
+
+        path_stat = path_obj.stat().st_mode
+        perms['r'] = bool(path_stat & stat.S_IRUSR)
+        perms['w'] = bool(path_stat & stat.S_IWUSR)
+        perms['e'] = bool(path_stat & stat.S_IXUSR)
+
+    except (PermissionError, OSError, ValueError):
+        return perms
+
+    return perms
 
 
-def getExt(path: Path):
+def getExt(path: Path|str):
+    """
+    Suffix of path
+    """
     path_ext = Path(path).suffix
     return path_ext
     
 
-def fileExists(path: Path):
+def fileExists(path: Path|str):
+    """
+    Check exist file
+    """
     return Path(path).exists()
 
-def isFile(path:str):
+def isFile(path:str|str):
+    """
+    Check path is file
+    """
     return Path(path).is_file()
 
-def fileName(path:Path):
+def fileName(path:Path|str):
+    """
+    Get filename path
+    """
     return Path(path).name
 
-def getFiles(path: str='.'):
-    if getPermissionFile(path).get('r') and fileExists(path):
+
+def getFiles(path: Path|str='.')->Generator[dict,None,None]:
+        """
+        Yield directory content (dirs + files) with meta 
+        """
         
-        current = Path(path)
+        path=Path(path)
         files = {'dir': [], 'files': []}
 
-        for file in current.iterdir():
-                if Path(file).is_dir():
-                    # files['dir'] = files.get('dir', []) + [Path(file).absolute().as_posix()]
-                    files['dir'] = files.get('dir', []) + [
-                        {'path': Path(file).absolute().as_posix(),
-                        'size': getSize(file),
-                        'time_mod': getTimeFile(file),
-                        'perm': getPermissionFile(file)}
-                        ]
+        try:
+            if not path.exists():
+                yield files
+                return
+        except (PermissionError, OSError, ValueError):
+            yield files
+            return
+        
+        if not getPermissionFile(path).get("r",False):
+            yield files
+            return
+
+        try:
+            iterator = path.iterdir()
+        except (PermissionError, OSError, ValueError):
+            yield files
+            return
+
+        while True:
+            try:
+                item = next(iterator)
+            except StopIteration:
+                break
+            except (PermissionError, OSError, ValueError):
+                break
+
+            try:
+                perm = getPermissionFile(item)
+                meta={
+                    "path":item.absolute().as_posix(),
+                    "size":getSize(item),
+                    "time_mod":getTimeFile(item),
+                    "perm":perm,
+                }
+
+                if item.is_dir():
+                    listable = True
+                    try:
+                        it = item.iterdir()
+                        try:
+                            next(it)
+                        except StopIteration:
+                            pass
+                    except (PermissionError, OSError, ValueError):
+                        listable = False
+                    meta["listable"] = listable
+                    files["dir"].append(meta)
                 else:
-                    # files['file'] = files.get('file', []) + [Path(file).absolute().as_posix()]
-                    files['files'] = files.get('files', []) + [
-                        {'path': Path(file).absolute().as_posix(), 'size': getSize(file), 'time_mod': getTimeFile(file),
-                        'perm': getPermissionFile(file)}]
+                    files["files"].append(meta)
+            except (PermissionError, OSError, ValueError):
+                continue
 
         yield files
-    return {}

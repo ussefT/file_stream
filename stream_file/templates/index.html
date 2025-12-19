@@ -6,12 +6,13 @@
     <title>stream storage</title>
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
-<body>
+<body data-current-path="{{ path }}">
 {% block body %}
 
 <header>
-    <h1>📂 Stream Storage</h1>
-
+     <h1>📂 Stream Storage</h1>
+    <button class="btn" onclick="openFileDialog()">Upload File</button>
+    <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
     <div class="toolbar">
         <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
             <option value="name">Name (A-Z)</option>
@@ -27,6 +28,15 @@
     </div>
 </header>
 
+<!-- ✅ Upload Progress Container -->
+<div id="uploadContainer" class="upload-container" style="display:none;">
+    <div class="upload-box">
+        <span id="uploadText">Uploading... 0%</span>
+        <div class="progress-bar">
+            <div id="progressFill"></div>
+        </div>
+    </div>
+</div>
 <div class="drive-container">
         {% for drive in drives %}
             <a href="/dir/{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
@@ -74,9 +84,16 @@
                                                                              {% if di.get('time_mod') %}
                                                                                         <span class="item-meta">{{ di.get('time_mod') }}</span>
                                                                              {% endif %}
+                                                                             {% if not di.get('listable', di.get('perm', {}).get('r', False)) %}
+                                                                                        <span class="item-meta">Access denied</span>
+                                                                             {% endif %}
                                                                 </div>
                                                         </div>
-                                                    <a href="/dir/{{ v }}" class="action-link">Open</a>
+                                                    {% if di.get('listable', di.get('perm', {}).get('r', False)) %}
+                                                        <a href="/dir/{{ v }}" class="action-link">Open</a>
+                                                    {% else %}
+                                                        <span class="action-link">No Access</span>
+                                                    {% endif %}
                                                
                                 
                                         </li>
@@ -110,7 +127,11 @@
                                                         {%endif%}
                                                         </div>
                                                 </div>
-                                                            <a href="/file/{{ v }}" class="action-link download">Download</a>
+                                                            {% if dit.get('perm', {}).get('r', False) %}
+                                                                <a href="/file/{{ v }}" class="action-link download">Download</a>
+                                                            {% else %}
+                                                                <span class="action-link download">No Access</span>
+                                                            {% endif %}
                                                        
                                        </li>
                                         {%endif%}
@@ -176,6 +197,67 @@
             items.forEach(item => list.appendChild(item));
         });
     }
+function openFileDialog() {
+    document.getElementById('fileInput').click();
+}
+
+async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Show progress container
+    const container = document.getElementById('uploadContainer');
+    const fill = document.getElementById('progressFill');
+    const text = document.getElementById('uploadText');
+
+    container.style.display = 'block';
+    fill.style.width = '0%';
+    text.innerText = `Uploading... 0%`;
+
+    const currentPath = document.body.dataset.currentPath || '.';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', currentPath);
+
+    // XMLHttpRequest to track progress
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/uploadFile', true);
+
+    xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            fill.style.width = percent + '%';
+            text.innerText = `Uploading... ${percent}%`;
+        }
+    };
+
+    xhr.onload = () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+            text.innerText = 'Upload successful!';
+            fill.style.width = '100%';
+            setTimeout(() => {
+                container.style.display = 'none';
+            }, 1500);
+            // Reload page or refresh file list
+            location.reload();
+        } else {
+            text.innerText = 'Upload failed!';
+            console.error('Upload error:', xhr.responseText);
+        }
+    };
+
+    xhr.onerror = () => {
+        text.innerText = 'Upload failed!';
+        console.error('Upload error');
+    };
+
+    xhr.send(formData);
+
+    // Reset file input
+    event.target.value = '';
+}
+
 </script>
 
 </html>
