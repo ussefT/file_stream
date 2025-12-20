@@ -13,7 +13,7 @@ import aiofiles
 from media_type import select_media_type
 from typing import Dict
 import utils
-
+from middleware.rate_limits import limiter
 
 # init fastapi
 router =APIRouter(tags=['template'])
@@ -78,18 +78,20 @@ async def permission_check(
 
 # welcome
 @router.get("/",status_code=200)
-async def welcome(req:Request):
+@limiter.limit("60/minute")
+async def welcome(request:Request):
     """
     Welcome page
     """
     return templates.TemplateResponse(
-        request=req,
+        request=request,
         name="welcome.html",
         media_type="text/html",
     )
 
 # home page
 @router.get('/home', response_class=HTMLResponse,status_code=status.HTTP_200_OK,tags=['Directory'])
+@limiter.limit("30/minute")
 async def home(request: Request,path:str=Depends(permission_check)):
     """
     Get item in path
@@ -105,7 +107,8 @@ async def home(request: Request,path:str=Depends(permission_check)):
 
 # directory
 @router.get('/dir/{full_path:path}',status_code=status.HTTP_200_OK,tags=['Directory'])
-async def dir(req: Request,full_path:str=fastPath(...,description="Full file path")):
+@limiter.limit("30/minute")
+async def dir(request: Request,full_path:str=fastPath(...,description="Full file path")):
     """
     Get directory from url and return file, request, path
     **path** send to url
@@ -124,7 +127,7 @@ async def dir(req: Request,full_path:str=fastPath(...,description="Full file pat
                 drives = utils.getDisk()
                 
                 return  templates.TemplateResponse(
-                    request=req, name='index.html', context={'files': files,'drives':drives, 'request': req
+                    request=request, name='index.html', context={'files': files,'drives':drives, 'request': request
                         , 'path': path})
                 
           
@@ -171,14 +174,15 @@ async def FileItera(path:str,start:int,end:int):
             status_code=status.HTTP_200_OK,
             summary="Download file with Full path"
             )
-async def play(req: Request, full_file: str=fastPath(...,description="file full path")):
+@limiter.limit("10/minute")
+async def play(request: Request, full_file: str=fastPath(...,description="file full path")):
     """
     Exist file, downlaod or stream 
     """
     # Check file is exist and is File
     if full_file:
         file=unquote(full_file)
-        range_header= req.headers.get('Range')
+        range_header= request.headers.get('Range')
 
         # check exist file and path is file 
         if utils.fileExists(file) and utils.isFile(file):
@@ -231,7 +235,8 @@ async def play(req: Request, full_file: str=fastPath(...,description="file full 
 
  
 @router.post('/uploadFile')
-async def upload_dur(file:UploadFile=File(...),path:str=Form(...)):
+@limiter.limit("10/minute")
+async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...)):
         """Upload file"""
         path = (path or "").strip() or "."
 
