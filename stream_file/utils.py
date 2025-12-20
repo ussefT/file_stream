@@ -134,6 +134,19 @@ def fileName(path:Path|str):
     """
     return Path(path).name
 
+def get_folder_size_bytes(path:Path|str)->int:
+    total=0
+    try:
+        for root in path.rglob("*"):
+            try:
+                if root.is_file():
+                    total+=root.stat().st_size
+            except Exception:
+                continue
+    except Exception:
+        pass
+    
+    return total
 
 def getFiles(path: Path|str='.')->Generator[dict,None,None]:
         """

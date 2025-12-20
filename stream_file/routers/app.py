@@ -12,7 +12,8 @@ from fastapi.templating import Jinja2Templates
 import aiofiles
 from typing import Dict
 import utils
-from middleware.rate_limits import limiter
+from middleware.rate_limits import limiter 
+import shutil
 
 # init fastapi
 router =APIRouter(tags=['template'])
@@ -21,11 +22,14 @@ router =APIRouter(tags=['template'])
 # init template
 templates = Jinja2Templates(directory='templates')
 
-
+MAX_FILE_BYTES = 500 * 1024 * 1024          # 500MB
+USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024   # 2GB
 
 async def permission_check(
+    # call_progress,
+    # option_for_progress:tuple,
     path: str | Path = ".",
-    permission: Dict[str,str] | None = None
+    permission: Dict[str,str] | None = None,
 ) -> Path:
     """
     Check file or directory permissions.
@@ -62,6 +66,7 @@ async def permission_check(
             try:
                 next(path.iterdir(), None)
             except (PermissionError, OSError, ValueError):
+
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="No permission to read"
@@ -69,6 +74,7 @@ async def permission_check(
 
         if not perms.get(key, False):
             action = label if isinstance(label, str) else key
+
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"No permission to {action}"
@@ -232,11 +238,34 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bad request")
     
 
- 
+def file_dublicate(des:Path|str,mode:str="reanme")->Path:
+    
+    if not des.exists() :
+        return des
+    
+    if mode=="overwrite":
+        return des
+     
+    if mode=="reject":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="File already exist")
+    
+    stem=des.stem
+    sufix=des.suffix
+    parent=des.parent
+    
+    i = 1
+    while True:
+        path_dest=parent / f"{stem} ({i}){sufix}"
+        if not path_dest.exists():
+            return path_dest
+        i +=1
+        
 @router.post('/uploadFile')
 @limiter.limit("10/minute")
 async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...)):
-        """Upload file"""
+        """Upload file"""        
+         
         path = (path or "").strip() or "."
 
         upload_path=await permission_check(
@@ -250,9 +279,39 @@ async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...
                 detail="Upload path must be a directory"
             )
         
+        # user_id= request.client.host if request.client else "unknown"
+        SAFETY_MARGIN = 200 * 1024 * 1024   # keep 200MB free (adjust)
+
+        free_bytes = shutil.disk_usage(str(upload_path)).free
+        
         save_path = upload_path / file.filename
-        async with aiofiles.open(str(save_path),"wb") as chunk:
-                while content:=await file.read(1024*1024):
+        
+        final_path=file_dublicate(save_path)
+        
+        written=0
+        chunk_size=1024*1024
+        
+        
+
+        async with aiofiles.open(final_path.absolute().as_posix(),"wb") as chunk:
+                while True:
+                    content=await file.read(chunk_size)
+                    if not content:
+                        break
+                    
+                    written += len(content)
+                    
+                    if written > free_bytes:
+                        raise HTTPException(
+                            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                                            detail="File to large"
+                                            )
+                    if written > (free_bytes - SAFETY_MARGIN):
+                        raise HTTPException(
+                            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                                            detail="Quota exceeded"
+                        )
+
                     await chunk.write(content)
                     
         return {"status": "ok", "filename": file.filename, "path": str(upload_path)}

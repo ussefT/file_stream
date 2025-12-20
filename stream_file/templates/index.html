@@ -14,7 +14,7 @@
     <button class="btn" onclick="openFileDialog()">Upload File</button>
     <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
     <div class="toolbar">
-        <input id="searchInput" class="btn" placeholder="Search…" oninput="applyFilters()">
+     <!--   <input id="searchInput" class="btn" placeholder="Search…" oninput="applyFilters()"> -->
 
             <select id="typeFilter" class="btn" onchange="applyFilters()">
                 <option value="">All types</option>
@@ -203,64 +203,78 @@ function applyFilters() {
 }
 
 function openFileDialog() {
-    document.getElementById('fileInput').click();
+  const input = document.getElementById('fileInput');
+  if (!input) {
+    console.error("fileInput not found");
+    return;
+  }
+  input.click();
 }
 
 async function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
 
-    // Show progress container
-    const container = document.getElementById('uploadContainer');
-    const fill = document.getElementById('progressFill');
-    const text = document.getElementById('uploadText');
+  const container = document.getElementById('uploadContainer');
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('uploadText');
 
+  if (container && fill && text) {
     container.style.display = 'block';
     fill.style.width = '0%';
-    text.innerText = `Uploading... 0%`;
+    text.innerText = 'Uploading... 0%';
+  }
 
-    const currentPath = document.body.dataset.currentPath || '.';
+  const currentPath = ((document.body.dataset.currentPath || "").trim() || ".");
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('path', currentPath);
+  const formData = new FormData();
+  formData.set('file', file);
+  formData.set('path', currentPath);
 
-    // XMLHttpRequest to track progress
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/uploadFile', true);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/uploadFile', true);
 
-    xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            fill.style.width = percent + '%';
-            text.innerText = `Uploading... ${percent}%`;
-        }
-    };
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable && fill && text) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      fill.style.width = percent + '%';
+      text.innerText = `Uploading... ${percent}%`;
+    }
+  };
 
-    xhr.onload = () => {
-        if (xhr.status === 200 || xhr.status === 201) {
-            text.innerText = 'Upload successful!';
-            fill.style.width = '100%';
-            setTimeout(() => {
-                container.style.display = 'none';
-            }, 1500);
-            // Reload page or refresh file list
-            location.reload();
-        } else {
-            text.innerText = 'Upload failed!';
-            console.error('Upload error:', xhr.responseText);
-        }
-    };
+  xhr.onload = () => {
+    if (xhr.status === 200 || xhr.status === 201) {
+      if (fill && text) {
+        fill.style.width = '100%';
+        text.innerText = 'Upload successful!';
+      }
 
-    xhr.onerror = () => {
-        text.innerText = 'Upload failed!';
-        console.error('Upload error');
-    };
+      // ✅ refresh the page after a short delay
+      setTimeout(() => {
+        if (container) container.style.display = 'none';
+        window.location.reload(); // or: window.location.href = window.location.href;
+      }, 800);
 
-    xhr.send(formData);
+    } else {
+      let msg = xhr.responseText;
+      try {
+        const j = JSON.parse(xhr.responseText);
+        msg = j.detail || msg;
+      } catch (e) {}
+      if (text) text.innerText = `Upload failed (${xhr.status}): ${msg}`;
+      console.error('Upload error:', xhr.status, xhr.responseText);
+    }
+  };
 
-    // Reset file input
-    event.target.value = '';
+  xhr.onerror = () => {
+    if (text) text.innerText = 'Upload failed (network error)';
+    console.error('Upload error: network error');
+  };
+
+  xhr.send(formData);
+
+  // allow selecting same file again
+  event.target.value = '';
 }
 
 function sortItems(criteria) {
