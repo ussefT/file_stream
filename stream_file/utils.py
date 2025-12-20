@@ -135,6 +135,9 @@ def fileName(path:Path|str):
     return Path(path).name
 
 def get_folder_size_bytes(path:Path|str)->int:
+    """
+    Folder size base Byte
+    """
     total=0
     try:
         for root in path.rglob("*"):

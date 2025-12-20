@@ -5,15 +5,15 @@ from fastapi import (
     APIRouter, Request, HTTPException ,Depends,status,UploadFile,Form,File
     )
 from fastapi import Path as fastPath
+from fastapi.templating import Jinja2Templates
 from fastapi.responses import  (
     HTMLResponse,StreamingResponse
     )
-from fastapi.templating import Jinja2Templates
-import aiofiles
 from typing import Dict
-import utils
 from middleware.rate_limits import limiter 
 import shutil
+import aiofiles
+import utils
 
 # init fastapi
 router =APIRouter(tags=['template'])
@@ -22,12 +22,12 @@ router =APIRouter(tags=['template'])
 # init template
 templates = Jinja2Templates(directory='templates')
 
+
 MAX_FILE_BYTES = 500 * 1024 * 1024          # 500MB
 USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024   # 2GB
 
+
 async def permission_check(
-    # call_progress,
-    # option_for_progress:tuple,
     path: str | Path = ".",
     permission: Dict[str,str] | None = None,
 ) -> Path:
@@ -59,7 +59,9 @@ async def permission_check(
             detail="Path not found"
         )
 
+    # check permission 
     perms = utils.getPermissionFile(path)
+
 
     for key, label in permission.items():
         if key == "r" and path.is_dir():
@@ -101,7 +103,11 @@ async def home(request: Request,path:str=Depends(permission_check)):
     """
     Get item in path
     """
+    
+    # Files in current path
     files=next(utils.getFiles(path))
+    
+    # Get partition
     drives = utils.getDisk()
     return  templates.TemplateResponse(
         request=request, name='index.html',
@@ -119,6 +125,8 @@ async def dir(request: Request,full_path:str=fastPath(...,description="Full file
     **path** send to url
     """
     if full_path:
+        
+                # clear url from %
                 path = unquote(full_path)
 
                 path_result=await permission_check(
@@ -221,7 +229,7 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
                                         headers=headers
                                     )
 
-                        
+                        # normal download
                         return  StreamingResponse(
                             FileItera(file,0,file_size-1)
                             ,media_type=media_type,
@@ -268,11 +276,13 @@ async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...
          
         path = (path or "").strip() or "."
 
+        # check permission
         upload_path=await permission_check(
             path=path,
             permission={"w":"write"}
         )
 
+        # check path is directory
         if not upload_path.is_dir():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -282,17 +292,19 @@ async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...
         # user_id= request.client.host if request.client else "unknown"
         SAFETY_MARGIN = 200 * 1024 * 1024   # keep 200MB free (adjust)
 
+        # free space from path
         free_bytes = shutil.disk_usage(str(upload_path)).free
         
         save_path = upload_path / file.filename
         
+        # normalize file
         final_path=file_dublicate(save_path)
         
         written=0
         chunk_size=1024*1024
         
         
-
+        # write file
         async with aiofiles.open(final_path.absolute().as_posix(),"wb") as chunk:
                 while True:
                     content=await file.read(chunk_size)
@@ -301,11 +313,14 @@ async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...
                     
                     written += len(content)
                     
+                    # size of path larger from space
                     if written > free_bytes:
                         raise HTTPException(
                             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                                             detail="File to large"
                                             )
+                    
+                    # size of path larger from minimum space
                     if written > (free_bytes - SAFETY_MARGIN):
                         raise HTTPException(
                             status_code=status.HTTP_413_CONTENT_TOO_LARGE,

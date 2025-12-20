@@ -1,10 +1,25 @@
 {% extends "index.html" %}
-
+{% block title %}
+    👋Welcome
+{% endblock title %}
 {% block body %}
-<h1 class="item-name">
-    Welcome to Stream File
-    <a class="action-link" href="/home">Home</a>
-</h1>
+<div style="max-width: 900px; margin: 60px auto; padding: 24px;">
+  <h1 class="item-name" style="font-size: 32px; margin-bottom: 8px;">
+    👋 Welcome to Stream Storage
+  </h1>
+
+  <p class="item-meta" style="margin: 0 0 18px 0;">
+    Browse, upload, and download files from this machine on your local network.
+  </p>
+
+  <div style="display:flex; gap:12px; align-items:center; margin-top:18px;">
+    <a class="action-link" href="/home">🏠 Open Home</a>
+  </div>
+
+  <div style="margin-top:24px;">
+    <p class="item-meta" style="margin:0;">
+      Tip: Share this link with devices on the same Wi-Fi network.
+    </p>
+  </div>
+</div>
 {% endblock body %}
-
-
