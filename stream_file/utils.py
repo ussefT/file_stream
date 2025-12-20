@@ -3,8 +3,9 @@ import string
 from datetime import datetime
 from os import name, access, R_OK, W_OK, X_OK
 from pathlib import Path
-from typing import Dict,Generator
+from typing import Generator
 import random
+import mimetypes
 
 def random_char(n)->str:
     """
@@ -55,7 +56,7 @@ def getSize(path: Path|str)->str:
     while byte >= 1024 and counter < len(size_st) - 1:
         byte = byte / 1024
         counter += 1
-    return f"{byte:.2f}{size_st[counter]}"
+    return f"{byte:.2f} {size_st[counter]}"
 
 def getIntsize(path:Path|str)->int:
     """
@@ -95,13 +96,24 @@ def getPermissionFile(path: Path|str):
 
     return perms
 
+def getMtimeTs(path: Path | str) -> int:
+    try:
+        return int(Path(path).stat().st_mtime)
+    except (PermissionError, OSError, ValueError):
+        return 0
 
-def getExt(path: Path|str):
-    """
-    Suffix of path
-    """
-    path_ext = Path(path).suffix
-    return path_ext
+def getMime(path: Path | str) -> str:
+    try:
+        mime, _ = mimetypes.guess_type(str(path))
+        return mime or "application/octet-stream"
+    except Exception:
+        return "application/octet-stream"
+
+def getExtStr(path: Path | str) -> str:
+    try:
+        return Path(path).suffix.lstrip(".").lower()
+    except Exception:
+        return ""
     
 
 def fileExists(path: Path|str):
@@ -159,11 +171,17 @@ def getFiles(path: Path|str='.')->Generator[dict,None,None]:
 
             try:
                 perm = getPermissionFile(item)
-                meta={
-                    "path":item.absolute().as_posix(),
-                    "size":getSize(item),
-                    "time_mod":getTimeFile(item),
-                    "perm":perm,
+                size_b = getIntsize(item)
+                meta = {
+                    "path": item.absolute().as_posix(),  
+                    "name": item.name,                     
+                    "size_b": size_b,                     
+                    "size_h": getSize(item),           
+                    "mtime_ts": getMtimeTs(item),        
+                    "time_mod": getTimeFile(item),         
+                    "mime": getMime(item),                
+                    "ext": getExtStr(item),               
+                    "perm": perm,
                 }
 
                 if item.is_dir():

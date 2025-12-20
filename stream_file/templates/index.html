@@ -14,17 +14,23 @@
     <button class="btn" onclick="openFileDialog()">Upload File</button>
     <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
     <div class="toolbar">
-        <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
-            <option value="name">Name (A-Z)</option>
-            <option value="date">Date Modified</option>
-        </select>
+        <input id="searchInput" class="btn" placeholder="Search…" oninput="applyFilters()">
 
-        <button class="btn active" onclick="setView('list')" id="btnList" title="List View">
-            ☰
-        </button>
-        <button class="btn" onclick="setView('grid')" id="btnGrid" title="Grid View">
-            ⊞
-        </button>
+            <select id="typeFilter" class="btn" onchange="applyFilters()">
+                <option value="">All types</option>
+                <option value="image">Images</option>
+                <option value="text">Text</option>
+                <option value="pdf">PDF</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+                <option value="zip">Archives</option>
+            </select>
+
+            <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
+                <option value="name">Name (A-Z)</option>
+                <option value="date">Date Modified</option>
+                <option value="size">Size (Large → Small)</option>
+            </select>
     </div>
 </header>
 
@@ -37,6 +43,7 @@
         </div>
     </div>
 </div>
+
 <div class="drive-container">
         {% for drive in drives %}
             <a href="/dir/{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
@@ -74,7 +81,10 @@
                             {% for k,v in di.items() %}
                                 {% if k=='path' %}
                                     {% set dir_=v.split('/')[-1:]|join('') %}
-                                        <li class="list-item" data-name="{{ dir_ }}" data-timestamp="1700100000">
+                                       <li class="list-item"
+                                                data-name="{{ dir_ }}"
+                                                data-timestamp="{{ di.get('mtime_ts', 0) }}"
+                                                data-type="dir">
                                                         <div class="item-info">
                                                             <div class="item-icon">📁</div>
                                                                 <div class="item-details">
@@ -82,7 +92,10 @@
                                            
 
                                                                              {% if di.get('time_mod') %}
-                                                                                        <span class="item-meta">{{ di.get('time_mod') }}</span>
+                                                                                <span class="item-meta">
+                                                                                {{ di.get('time_mod') }} • {{ di.get('size_h') }}
+                                                                                </span>
+
                                                                              {% endif %}
                                                                              {% if not di.get('listable', di.get('perm', {}).get('r', False)) %}
                                                                                         <span class="item-meta">Access denied</span>
@@ -115,15 +128,22 @@
                                 {% for k,v in dit.items() %}
                                     {% if k=='path' %}
                                         {% set file_=v.split('/')[-1:]|join('') %}
-                                        <li class="list-item" data-name="{{ file_ }}" data-timestamp="1700100000">
-                                                <div class="item-info">
+                                            <li class="list-item"
+                                                data-name="{{ file_ }}"
+                                                data-timestamp="{{ dit.get('mtime_ts', 0) }}"
+                                                data-size="{{ dit.get('size_b', 0) }}"
+                                                data-mime="{{ dit.get('mime', '') }}"
+                                                data-ext="{{ dit.get('ext', '') }}"
+                                                data-type="file">
+                                                 <div class="item-info">
                                                     <div class="item-icon">📃</div>
                                                         <div class="item-details">
                                                             <span class="item-name">{{ file_ }}</span>
                                                         {% if dit.get('time_mod') %}
-                                                                        <span class="item-meta">
-                                                                                {{ dit.get('time_mod') }}
-                                                                            </span>
+                                                             <span class="item-meta">
+                                                                {{ dit.get('time_mod') }} • {{ dit.get('size_h') }}
+                                                                </span>
+
                                                         {%endif%}
                                                         </div>
                                                 </div>
@@ -152,51 +172,36 @@
 {% endblock body %}
 </body>
 <script>
-    // 1. VIEW TOGGLE LOGIC
-    function setView(viewType) {
-        const lists = document.querySelectorAll('.file-list');
-        const btnList = document.getElementById('btnList');
-        const btnGrid = document.getElementById('btnGrid');
+   function classify(mime, ext) {
+  mime = (mime || "").toLowerCase();
+  ext = (ext || "").toLowerCase();
 
-        lists.forEach(list => {
-            if (viewType === 'grid') {
-                list.classList.add('grid-view');
-                btnGrid.classList.add('active');
-                btnList.classList.remove('active');
-            } else {
-                list.classList.remove('grid-view');
-                btnList.classList.add('active');
-                btnGrid.classList.remove('active');
-            }
-        });
-    }
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime === "application/pdf" || ext === "pdf") return "pdf";
+  if (mime.startsWith("text/") || ["txt","md","py","js","html","css","json","csv","log"].includes(ext)) return "text";
+  if (["zip","rar","7z","tar","gz"].includes(ext)) return "zip";
+  return "other";
+}
 
-    // 2. SORTING LOGIC
-    function sortItems(criteria) {
-        const lists = ['dirList', 'fileList']; // IDs of the ULs
+function applyFilters() {
+  const q = (document.getElementById("searchInput").value || "").toLowerCase();
+  const type = document.getElementById("typeFilter").value;
 
-        lists.forEach(listId => {
-            const list = document.getElementById(listId);
-            const items = Array.from(list.getElementsByClassName('list-item'));
+  document.querySelectorAll(".list-item").forEach(item => {
+    const name = (item.getAttribute("data-name") || "").toLowerCase();
+    const mime = item.getAttribute("data-mime") || "";
+    const ext = item.getAttribute("data-ext") || "";
+    const isDir = item.getAttribute("data-type") === "dir";
 
-            items.sort((a, b) => {
-                if (criteria === 'name') {
-                    // Sort by Name (A-Z)
-                    const nameA = a.getAttribute('data-name').toLowerCase();
-                    const nameB = b.getAttribute('data-name').toLowerCase();
-                    return nameA.localeCompare(nameB);
-                } else if (criteria === 'date') {
-                    // Sort by Date (Newest First) - using data-timestamp
-                    const timeA = parseInt(a.getAttribute('data-timestamp'));
-                    const timeB = parseInt(b.getAttribute('data-timestamp'));
-                    return timeB - timeA;
-                }
-            });
+    const matchesSearch = !q || name.includes(q);
+    const matchesType = !type || isDir || classify(mime, ext) === type;
 
-            // Re-append sorted items
-            items.forEach(item => list.appendChild(item));
-        });
-    }
+    item.style.display = (matchesSearch && matchesType) ? "" : "none";
+  });
+}
+
 function openFileDialog() {
     document.getElementById('fileInput').click();
 }
@@ -256,6 +261,31 @@ async function handleFileUpload(event) {
 
     // Reset file input
     event.target.value = '';
+}
+
+function sortItems(criteria) {
+  const lists = ['dirList', 'fileList'];
+
+  lists.forEach(listId => {
+    const list = document.getElementById(listId);
+    if (!list) return; // ✅ guard
+
+    const items = Array.from(list.getElementsByClassName('list-item'));
+
+    items.sort((a, b) => {
+      if (criteria === 'name') {
+        const nameA = (a.getAttribute('data-name') || "").toLowerCase();
+        const nameB = (b.getAttribute('data-name') || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      } else if (criteria === 'date') {
+        const timeA = Number(a.getAttribute('data-timestamp')) || 0;
+        const timeB = Number(b.getAttribute('data-timestamp')) || 0;
+        return timeB - timeA; // newest first
+      }
+    });
+
+    items.forEach(item => list.appendChild(item));
+  });
 }
 
 </script>

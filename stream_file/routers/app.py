@@ -10,7 +10,6 @@ from fastapi.responses import  (
     )
 from fastapi.templating import Jinja2Templates
 import aiofiles
-from media_type import select_media_type
 from typing import Dict
 import utils
 from middleware.rate_limits import limiter
@@ -191,7 +190,7 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
                         full_file=await permission_check(path=full_file,permission={"r":"read"})
 
                         file_size= utils.getIntsize(file)
-                        media_type= select_media_type(utils.getExt(file))
+                        media_type= utils.getMime(file)
                         if range_header:
                             start,end= range_header.replace("bytes=","").split("-")
                             start=int(start)
