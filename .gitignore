@@ -175,3 +175,7 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 play.tar
+
+stream_file/middleware/__pycache__/*
+/stream_file/middleware/__pycache__/*
+./stream_file/middleware/__pycache__/*
