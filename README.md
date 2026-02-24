@@ -46,14 +46,33 @@ Install requirements.txt
 pip install -r requirements.txt
 ```
 
-## Use
+## easy use
+
+Auto start:
+
+```bash
+
+python main.py
+
+```
+
+Custome local and port
+```bash
+
+python main.py -l 192.168.56.1 -p 8000
+
+```
+
+
+
+## Hard use
 Run on local ip address wifi:
 ```bash
 ifconfig
 ```
 
 ```bash
-fastapi dev play.py --localhost 192.168.56.113 --port 8000
+fastapi dev main.py --localhost 192.168.56.113 --port 8000
 ```
 
 ```text
