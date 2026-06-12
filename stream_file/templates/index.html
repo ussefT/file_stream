@@ -1,7 +1,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
     {% block title %}
@@ -9,6 +8,67 @@
     {% endblock title %}
     </title>
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+<style>
+    /* Modal/Dialog Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.9);
+    }
+
+    .modal-content {
+        position: relative;
+        margin: auto;
+        padding: 0;
+        width: 90%;
+        max-width: 1200px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1001;
+    }
+
+    .close-modal:hover,
+    .close-modal:focus {
+        color: #bbb;
+    }
+
+    .modal img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .modal video,
+    .modal audio {
+        width: 100%;
+        max-height: 80vh;
+        display: block;
+    }
+
+    .modal-title {
+        color: white;
+        padding: 10px;
+        text-align: center;
+        font-size: 18px;
+        background-color: rgba(0,0,0,0.5);
+    }
+</style>
 </head>
 <body data-current-path="{{ path }}">
 {% block body %}
@@ -45,6 +105,15 @@
         <div class="progress-bar">
             <div id="progressFill"></div>
         </div>
+    </div>
+</div>
+
+<!-- Media/Image Modal Dialog -->
+<div id="mediaModal" class="modal">
+    <span class="close-modal" onclick="closeModal()">&times;</span>
+    <div class="modal-content">
+        <div class="modal-title" id="modalTitle"></div>
+        <div id="modalBody"></div>
     </div>
 </div>
 
@@ -132,15 +201,23 @@
                                 {% for k,v in dit.items() %}
                                     {% if k=='path' %}
                                         {% set file_=v.split('/')[-1:]|join('') %}
+                                        {% set mime_type=dit.get('mime', '') %}
+                                        {% set ext=dit.get('ext', '').lower() %}
                                             <li class="list-item"
                                                 data-name="{{ file_ }}"
                                                 data-timestamp="{{ dit.get('mtime_ts', 0) }}"
                                                 data-size="{{ dit.get('size_b', 0) }}"
-                                                data-mime="{{ dit.get('mime', '') }}"
-                                                data-ext="{{ dit.get('ext', '') }}"
+                                                data-mime="{{ mime_type }}"
+                                                data-ext="{{ ext }}"
                                                 data-type="file">
                                                  <div class="item-info">
-                                                    <div class="item-icon">📃</div>
+                                                    <div class="item-icon">
+                                                        {% if mime_type.startswith('image/') %}🖼️
+                                                        {% elif mime_type.startswith('video/') %}🎬
+                                                        {% elif mime_type.startswith('audio/') %}🎵
+                                                        {% else %}📃
+                                                        {% endif %}
+                                                    </div>
                                                         <div class="item-details">
                                                             <span class="item-name">{{ file_ }}</span>
                                                         {% if dit.get('time_mod') %}
@@ -152,7 +229,18 @@
                                                         </div>
                                                 </div>
                                                             {% if dit.get('perm', {}).get('r', False) %}
-                                                                <a href="/file/{{ v }}" class="action-link download">Download</a>
+                                                                {% if mime_type.startswith('image/') or mime_type.startswith('video/') or mime_type.startswith('audio/') %}
+                                                                    <a href="javascript:void(0);" 
+                                                                       class="action-link play" 
+                                                                       onclick="openMedia('/file/{{ v }}', '{{ file_ }}', '{{ mime_type }}')">
+                                                                       {% if mime_type.startswith('image/') %}View
+                                                                       {% else %}Play
+                                                                       {% endif %}
+                                                                    </a>
+                                                                    <a href="/file/{{ v }}" class="action-link download" download>Download</a>
+                                                                {% else %}
+                                                                    <a href="/file/{{ v }}" class="action-link download">Download</a>
+                                                                {% endif %}
                                                             {% else %}
                                                                 <span class="action-link download">No Access</span>
                                                             {% endif %}
@@ -174,6 +262,71 @@
 {%endif%}
 
 {% endblock body %}
-</body>
+
+<script>
+// Function to open media in modal
+function openMedia(fileUrl, fileName, mimeType) {
+    const modal = document.getElementById('mediaModal');
+    const modalBody = document.getElementById('modalBody');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    modalTitle.textContent = fileName;
+    modalBody.innerHTML = '';
+    
+    if (mimeType.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = fileUrl;
+        img.alt = fileName;
+        modalBody.appendChild(img);
+    } else if (mimeType.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.autoplay = true;
+        video.src = fileUrl;
+        modalBody.appendChild(video);
+    } else if (mimeType.startsWith('audio/')) {
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.autoplay = true;
+        audio.src = fileUrl;
+        audio.style.width = '100%';
+        modalBody.appendChild(audio);
+    }
+    
+    modal.style.display = 'block';
+}
+
+// Function to close modal
+function closeModal() {
+    const modal = document.getElementById('mediaModal');
+    const modalBody = document.getElementById('modalBody');
+    
+    // Stop any playing media
+    const video = modalBody.querySelector('video');
+    const audio = modalBody.querySelector('audio');
+    if (video) video.pause();
+    if (audio) audio.pause();
+    
+    modal.style.display = 'none';
+    modalBody.innerHTML = '';
+}
+
+// Close modal when clicking outside of content
+window.onclick = function(event) {
+    const modal = document.getElementById('mediaModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+
+// Close modal with ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+
 <script src="{{ url_for('static', path='js/script.js') }}"></script>
+</body>
 </html>
