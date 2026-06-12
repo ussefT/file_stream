@@ -1,3 +1,19 @@
+import sys
+import os
+from pathlib import Path
+
+# Handle bundled executable paths
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    BASE_DIR = Path(sys._MEIPASS)
+    SCRIPT_DIR = Path(sys.executable).parent
+else:
+    # Running as script
+    BASE_DIR = Path(__file__).parent
+    SCRIPT_DIR = BASE_DIR
+
+
+
 from fastapi import FastAPI
 from routers.app import router as templates
 from routers.api import router as api
@@ -162,27 +178,108 @@ parser.add_argument("--local","-l",type=str,default=None,help="Choose IP (must i
 
 args=parser.parse_args()
 
+# if __name__=="__main__":
+    
+#     if args.local is not None:
+#         ip=args.local
+#         if check_host(ip):
+#             port=args.port
+#             if port is not None:
+#                 if args.port in range(0,65536):
+#                         if check_exist_IP_Port(ip,port):
+#                             print("Loading . . . ")
+#                             uvicorn.run(app,host=ip,port=port)
+#                         else:
+#                             print("IP not exist in OS or port is uses")
+#                 else:
+#                     print("Port  Out of range must between 0, 65535 ")
+#             else:
+#                 print("Port  Out of range must between 0, 65535 number")
+#         else:
+#             print("IP must like this 192.168.1.1")
+#     else:
+#         interfaces=find_networl_intefaces()
+#         port=find_free_port(8001,9000)
+#         print(port)
+#         uvicorn.run(app,host=interfaces["wifi"][0],port=port)
+
 if __name__=="__main__":
     
     if args.local is not None:
-        ip=args.local
+        # Manual IP configuration
+        ip = args.local
         if check_host(ip):
-            port=args.port
-            if port is not None:
-                if args.port in range(0,65536):
-                        if check_exist_IP_Port(ip,port):
-                            print("Loading . . . ")
-                            uvicorn.run(app,host=ip,port=port)
-                        else:
-                            print("IP not exist in OS or port is uses")
+            port = args.port if args.port is not None else 8000
+            
+            if port in range(0, 65536):
+                if check_exist_IP_Port(ip, port):
+                    print(f"🚀 Starting server at http://{ip}:{port}")
+                    uvicorn.run(app, host=ip, port=port)
                 else:
-                    print("Port  Out of range must between 0, 65535 ")
+                    print(f"❌ Error: IP '{ip}' not available or port {port} already in use")
             else:
-                print("Port  Out of range must between 0, 65535 number")
+                print(f"❌ Error: Port {port} out of range (must be 0-65535)")
         else:
-            print("IP must like this 192.168.1.1")
+            print(f"❌ Error: Invalid IP format '{ip}' (expected format: 192.168.1.1)")
     else:
-        interfaces=find_networl_intefaces()
-        port=find_free_port(8001,9000)
-        print(port)
-        uvicorn.run(app,host=interfaces["wifi"][0],port=port)
+        # Auto-detect network configuration
+        try:
+            interfaces = find_networl_intefaces()
+            
+            # Display all available network interfaces
+            print("\n" + "="*50)
+            print("📡 Available Network Interfaces:")
+            print("="*50)
+            
+            all_ips = []
+            for interface_name, ips in interfaces.items():
+                if ips:
+                    print(f"  {interface_name.upper():12} : {', '.join(ips)}")
+                    all_ips.extend([(ip, interface_name) for ip in ips])
+            
+            if not all_ips:
+                print("  ⚠ No network interfaces detected")
+            
+            print("="*50 + "\n")
+            
+            # Select IP with priority: WiFi > Ethernet > Localhost > Fallback
+            selected_ip = None
+            interface_type = None
+            
+            if "wifi" in interfaces and interfaces["wifi"]:
+                selected_ip = interfaces["wifi"][0]
+                interface_type = "WiFi"
+            elif "ethernet" in interfaces and interfaces["ethernet"]:
+                selected_ip = interfaces["ethernet"][0]
+                interface_type = "Ethernet"
+            elif "localhost" in interfaces and interfaces["localhost"]:
+                selected_ip = interfaces["localhost"][0]
+                interface_type = "Localhost"
+            else:
+                selected_ip = "127.0.0.1"
+                interface_type = "Fallback"
+                print("⚠  Warning: No network interfaces found, using fallback\n")
+            
+            # Find available port
+            port = find_free_port(8001, 9000)
+            
+            if port is None:
+                print("❌ Error: No free port available in range 8001-9000")
+                print("💡 Tip: Try specifying a port manually with --port")
+                exit(1)
+            
+            # Display server info
+            print(f"✓ Interface Type : {interface_type}")
+            print(f"✓ Server IP      : {selected_ip}")
+            print(f"✓ Server Port    : {port}")
+            print(f"\n🚀 Starting server at http://{selected_ip}:{port}")
+            
+            if interface_type == "WiFi":
+                print(f"📱 Access from other devices: http://{selected_ip}:{port}\n")
+            
+            uvicorn.run(app, host=selected_ip, port=port)
+            
+        except Exception as e:
+            print(f"❌ Fatal Error: {str(e)}")
+            print("💡 Try running with manual configuration: --local 127.0.0.1 --port 8000")
+            exit(1)
