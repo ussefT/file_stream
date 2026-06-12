@@ -26,9 +26,10 @@ templates = Jinja2Templates(directory='templates')
 MAX_FILE_BYTES = 500 * 1024 * 1024          # 500MB
 USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024   # 2GB
 
+PATH_HOME=Path.home() / "Desktop"
 
 async def permission_check(
-    path: str | Path = ".",
+    path: str | Path = PATH_HOME,
     permission: Dict[str,str] | None = None,
 ) -> Path:
     """
@@ -109,9 +110,10 @@ async def home(request: Request,path:str=Depends(permission_check)):
     
     # Get partition
     drives = utils.getDisk()
+  
     return  templates.TemplateResponse(
         request=request, name='index.html',
-        context={"files": files, 'drives': drives, 'path': Path('.').absolute().as_posix()},
+        context={"files": files, 'drives': drives, 'path': PATH_HOME.absolute().as_posix()},
         media_type="text/html"
     )
 
