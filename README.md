@@ -9,6 +9,14 @@
 
 ## 🛠️ Installation
 
+
+### Clone
+Clone project:
+
+```bash
+git clone https://github.com/ussefT/file_stream.git
+```
+
 ### 🪟 Windows
 
 First, install Python and verify that it is installed correctly:
@@ -29,7 +37,6 @@ Then activate it:
 cd venv\Scripts\
 activate
 ```
-
 
 ---
 
@@ -58,6 +65,7 @@ Activate it:
 ```bash
 source venv/bin/activate
 ```
+
 
 ---
 
