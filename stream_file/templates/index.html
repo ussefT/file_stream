@@ -1,104 +1,99 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-    {% block title %}
-    Stream Storage
-    {% endblock title %}
-    </title>
-<link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-<style>
-    /* Modal/Dialog Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.9);
-    }
+    <title>{% block title %}Stream Storage{% endblock title %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    <style>
+        /* Modal/Dialog Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.9);
+        }
 
-    .modal-content {
-        position: relative;
-        margin: auto;
-        padding: 0;
-        width: 90%;
-        max-width: 1200px;
-        top: 50%;
-        transform: translateY(-50%);
-    }
+        .modal-content {
+            position: relative;
+            margin: auto;
+            padding: 0;
+            width: 90%;
+            max-width: 1200px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
 
-    .close-modal {
-        position: absolute;
-        top: 15px;
-        right: 35px;
-        color: #f1f1f1;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-        z-index: 1001;
-    }
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+        }
 
-    .close-modal:hover,
-    .close-modal:focus {
-        color: #bbb;
-    }
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #bbb;
+        }
 
-    .modal img {
-        width: 100%;
-        height: auto;
-        display: block;
-    }
+        .modal img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
 
-    .modal video,
-    .modal audio {
-        width: 100%;
-        max-height: 80vh;
-        display: block;
-    }
+        .modal video,
+        .modal audio {
+            width: 100%;
+            max-height: 80vh;
+            display: block;
+        }
 
-    .modal-title {
-        color: white;
-        padding: 10px;
-        text-align: center;
-        font-size: 18px;
-        background-color: rgba(0,0,0,0.5);
-    }
-</style>
+        .modal-title {
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+            background-color: rgba(0,0,0,0.5);
+        }
+    </style>
 </head>
 <body data-current-path="{{ path }}">
 {% block body %}
 
 <header>
-     <h1>📂 Stream Storage</h1>
+    <h1>📂 Stream Storage</h1>
     <button class="btn" onclick="openFileDialog()">Upload File</button>
     <input type="file" id="fileInput" style="display: none;" onchange="handleFileUpload(event)">
     <div class="toolbar">
-     <!--   <input id="searchInput" class="btn" placeholder="Search…" oninput="applyFilters()"> -->
+        <select id="typeFilter" class="btn" onchange="applyFilters()">
+            <option value="">All types</option>
+            <option value="image">Images</option>
+            <option value="text">Text</option>
+            <option value="pdf">PDF</option>
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+            <option value="zip">Archives</option>
+        </select>
 
-            <select id="typeFilter" class="btn" onchange="applyFilters()">
-                <option value="">All types</option>
-                <option value="image">Images</option>
-                <option value="text">Text</option>
-                <option value="pdf">PDF</option>
-                <option value="video">Video</option>
-                <option value="audio">Audio</option>
-                <option value="zip">Archives</option>
-            </select>
-
-            <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
-                <option value="name">Name (A-Z)</option>
-                <option value="date">Date Modified</option>
-                <option value="size">Size (Large → Small)</option>
-            </select>
+        <select id="sortSelect" class="btn" onchange="sortItems(this.value)">
+            <option value="name">Name (A-Z)</option>
+            <option value="date">Date Modified</option>
+            <option value="size">Size (Large → Small)</option>
+        </select>
     </div>
 </header>
 
-<!-- ✅ Upload Progress Container -->
+<!-- Upload Progress Container -->
 <div id="uploadContainer" class="upload-container" style="display:none;">
     <div class="upload-box">
         <span id="uploadText">Uploading... 0%</span>
@@ -118,148 +113,121 @@
 </div>
 
 <div class="drive-container">
-        {% for drive in drives %}
-            <a href="/dir/{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
-                <div class="drive-icon">💿</div>
-                <div class="drive-info">
-                    <span class="drive-name">Local Disk ({{ drive }})</span>
-                    <span class="drive-label">System</span>
-                </div>
-            </a>
-        {% endfor %}
+    {% for drive in drives %}
+        <a href="/dir/{{ drive }}" class="drive-card active" onclick="selectDrive(event, this)">
+            <div class="drive-icon">💿</div>
+            <div class="drive-info">
+                <span class="drive-name">Local Disk ({{ drive }})</span>
+                <span class="drive-label">System</span>
+            </div>
+        </a>
+    {% endfor %}
 </div>
 
 <nav class="breadcrumbs">
     {% if path %}
-        {% set path_=path.split('/') %}
-        {% for i in  path_ %}
-
-            <a href='/dir/{{ "/".join(path_[:loop.index]) }}'>{{ path_[:loop.index][loop.index0] }}</a>
-            /
+        {% set path_str = path|string %}
+        {% set ns = namespace(acc='') %}
+        {% for part in path_str.replace('\\', '/').split('/') if part %}
+            {% set ns.acc = ns.acc ~ '/' ~ part %}
+            <a href="/dir{{ ns.acc }}">{{ part }}</a> /
         {% endfor %}
-
     {% endif %}
 </nav>
 
-{%if files%}
-  {% for key,dict in files.items()%}
+{% if files %}
+    {% for key, group in files.items() %}
     <div class="file-section">
-       
-                
+        <h3 class="section-title">{{ key|upper }}</h3>
+        <ul class="file-list" id="{{ 'dirList' if key == 'dir' else 'fileList' }}">
 
-                {%if key=="dir"%}
-                            <h3 class="section-title">{{key.uppercase}}</h3>
-                            <ul class="file-list" id="dirList">
-                        {% for di in dict %}
-                            {% for k,v in di.items() %}
-                                {% if k=='path' %}
-                                    {% set dir_=v.split('/')[-1:]|join('') %}
-                                       <li class="list-item"
-                                                data-name="{{ dir_ }}"
-                                                data-timestamp="{{ di.get('mtime_ts', 0) }}"
-                                                data-type="dir">
-                                                        <div class="item-info">
-                                                            <div class="item-icon">📁</div>
-                                                                <div class="item-details">
-                                                                    <span class="item-name">{{ dir_ }}</span>
-                                           
-
-                                                                             {% if di.get('time_mod') %}
-                                                                                <span class="item-meta">
-                                                                                {{ di.get('time_mod') }} • {{ di.get('size_h') }}
-                                                                                </span>
-
-                                                                             {% endif %}
-                                                                             {% if not di.get('listable', di.get('perm', {}).get('r', False)) %}
-                                                                                        <span class="item-meta">Access denied</span>
-                                                                             {% endif %}
-                                                                </div>
-                                                        </div>
-                                                    {% if di.get('listable', di.get('perm', {}).get('r', False)) %}
-                                                        <a href="/dir/{{ v }}" class="action-link">Open</a>
-                                                    {% else %}
-                                                        <span class="action-link">No Access</span>
-                                                    {% endif %}
-                                               
-                                
-                                        </li>
-                                         {% endif %}
-                            {% endfor %}
-                        {% endfor %}
-
-                                        
-            </ul>
-    </div>
-
-    {% elif key=='files' %}
-
-
-    <div class="file-section">
-    <h3 class="section-title">{{key.uppercase}}</h3>
-    <ul class="file-list" id="fileList">
-                            {% for dit in dict %}
-                                {% for k,v in dit.items() %}
-                                    {% if k=='path' %}
-                                        {% set file_=v.split('/')[-1:]|join('') %}
-                                        {% set mime_type=dit.get('mime', '') %}
-                                        {% set ext=dit.get('ext', '').lower() %}
-                                            <li class="list-item"
-                                                data-name="{{ file_ }}"
-                                                data-timestamp="{{ dit.get('mtime_ts', 0) }}"
-                                                data-size="{{ dit.get('size_b', 0) }}"
-                                                data-mime="{{ mime_type }}"
-                                                data-ext="{{ ext }}"
-                                                data-type="file">
-                                                 <div class="item-info">
-                                                    <div class="item-icon">
-                                                        {% if mime_type.startswith('image/') %}🖼️
-                                                        {% elif mime_type.startswith('video/') %}🎬
-                                                        {% elif mime_type.startswith('audio/') %}🎵
-                                                        {% else %}📃
-                                                        {% endif %}
-                                                    </div>
-                                                        <div class="item-details">
-                                                            <span class="item-name">{{ file_ }}</span>
-                                                        {% if dit.get('time_mod') %}
-                                                             <span class="item-meta">
-                                                                {{ dit.get('time_mod') }} • {{ dit.get('size_h') }}
-                                                                </span>
-
-                                                        {%endif%}
-                                                        </div>
-                                                </div>
-                                                            {% if dit.get('perm', {}).get('r', False) %}
-                                                                {% if mime_type.startswith('image/') or mime_type.startswith('video/') or mime_type.startswith('audio/') %}
-                                                                    <a href="javascript:void(0);" 
-                                                                       class="action-link play" 
-                                                                       onclick="openMedia('/file/{{ v }}', '{{ file_ }}', '{{ mime_type }}')">
-                                                                       {% if mime_type.startswith('image/') %}View
-                                                                       {% else %}Play
-                                                                       {% endif %}
-                                                                    </a>
-                                                                    <a href="/file/{{ v }}" class="action-link download" download>Download</a>
-                                                                {% else %}
-                                                                    <a href="/file/{{ v }}" class="action-link download">Download</a>
-                                                                {% endif %}
-                                                            {% else %}
-                                                                <span class="action-link download">No Access</span>
-                                                            {% endif %}
-                                                       
-                                       </li>
-                                        {%endif%}
-                                {%endfor%}
-                            {%endfor%}
+        {% if key == 'dir' %}
+            {% for di in group %}
+                {% set raw = di.get('path', '').replace('\\', '/').strip('/') %}
+                {% set name = raw.split('/')[-1] %}
+                {% set can_read = di.get('listable', di.get('perm', {}).get('r', False)) %}
+                <li class="list-item"
+                    data-name="{{ name }}"
+                    data-timestamp="{{ di.get('mtime_ts', 0) }}"
+                    data-type="dir">
+                    <div class="item-info">
+                        <div class="item-icon">📁</div>
+                        <div class="item-details">
+                            <span class="item-name">{{ name }}</span>
+                            {% if di.get('time_mod') %}
+                                <span class="item-meta">
+                                    {{ di.get('time_mod') }} • {{ di.get('size_h', '') }}
+                                </span>
+                            {% endif %}
+                            {% if not can_read %}
+                                <span class="item-meta">Access denied</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if can_read %}
+                        <a href="/dir/{{ raw }}" class="action-link">Open</a>
+                    {% else %}
+                        <span class="action-link">No Access</span>
                     {% endif %}
-            
-     
+                </li>
+            {% endfor %}
 
-                                 
-                        </ul>
+        {% elif key == 'files' %}
+            {% for dit in group %}
+                {% set raw = dit.get('path', '').replace('\\', '/').rstrip('/') %}
+                {% set name = raw.split('/')[-1] %}
+                {% set mime_type = dit.get('mime', '') %}
+                {% set ext = dit.get('ext', '')|lower %}
+                {% set can_read = dit.get('perm', {}).get('r', False) %}
+                {% set is_media = mime_type.startswith('image/')
+                                  or mime_type.startswith('video/')
+                                  or mime_type.startswith('audio/') %}
+                <li class="list-item"
+                    data-name="{{ name }}"
+                    data-timestamp="{{ dit.get('mtime_ts', 0) }}"
+                    data-size="{{ dit.get('size_b', 0) }}"
+                    data-mime="{{ mime_type }}"
+                    data-ext="{{ ext }}"
+                    data-type="file">
+                    <div class="item-info">
+                        <div class="item-icon">
+                            {% if mime_type.startswith('image/') %}🖼️
+                            {% elif mime_type.startswith('video/') %}🎬
+                            {% elif mime_type.startswith('audio/') %}🎵
+                            {% else %}📃
+                            {% endif %}
+                        </div>
+                        <div class="item-details">
+                            <span class="item-name">{{ name }}</span>
+                            {% if dit.get('time_mod') %}
+                                <span class="item-meta">
+                                    {{ dit.get('time_mod') }} • {{ dit.get('size_h', '') }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if can_read %}
+                        {% if is_media %}
+                            <a href="javascript:void(0);"
+                               class="action-link play"
+                               onclick='openMedia({{ ("/file/" ~ raw)|tojson }}, {{ name|tojson }}, {{ mime_type|tojson }})'>
+                                {% if mime_type.startswith('image/') %}View{% else %}Play{% endif %}
+                            </a>
+                            <a href="/file/{{ raw }}" class="action-link download" download>Download</a>
+                        {% else %}
+                            <a href="/file/{{ raw }}" class="action-link download">Download</a>
+                        {% endif %}
+                    {% else %}
+                        <span class="action-link download">No Access</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        {% endif %}
 
-                </div>
-
-   {% endfor %}
-{%endif%}
+        </ul>
+    </div>
+    {% endfor %}
+{% endif %}
 
 {% endblock body %}
 
@@ -269,10 +237,10 @@ function openMedia(fileUrl, fileName, mimeType) {
     const modal = document.getElementById('mediaModal');
     const modalBody = document.getElementById('modalBody');
     const modalTitle = document.getElementById('modalTitle');
-    
+
     modalTitle.textContent = fileName;
     modalBody.innerHTML = '';
-    
+
     if (mimeType.startsWith('image/')) {
         const img = document.createElement('img');
         img.src = fileUrl;
@@ -292,7 +260,7 @@ function openMedia(fileUrl, fileName, mimeType) {
         audio.style.width = '100%';
         modalBody.appendChild(audio);
     }
-    
+
     modal.style.display = 'block';
 }
 
@@ -300,13 +268,13 @@ function openMedia(fileUrl, fileName, mimeType) {
 function closeModal() {
     const modal = document.getElementById('mediaModal');
     const modalBody = document.getElementById('modalBody');
-    
+
     // Stop any playing media
     const video = modalBody.querySelector('video');
     const audio = modalBody.querySelector('audio');
     if (video) video.pause();
     if (audio) audio.pause();
-    
+
     modal.style.display = 'none';
     modalBody.innerHTML = '';
 }

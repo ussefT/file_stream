@@ -1,8 +1,5 @@
 import sys
 
-
-
-
 from logger import logger
 import argparse
 import platform

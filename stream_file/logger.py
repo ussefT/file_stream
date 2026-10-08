@@ -1,4 +1,5 @@
-import logging 
+import logging
+from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
 import os
@@ -35,7 +36,7 @@ def init_logger()-> logging.Logger:
     console_handler.setFormatter(formatter)
 
     # File
-    file_handler = logging.handlers.RotatingFileHandler(
+    file_handler = RotatingFileHandler(
         LOG_FILE,
         maxBytes=5 * 1024 * 1024 ,
         backupCount=3,

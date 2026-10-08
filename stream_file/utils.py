@@ -6,13 +6,15 @@ from collections.abc import Generator
 from datetime import datetime
 from os import R_OK, W_OK, X_OK, access, name
 from pathlib import Path
-
+import re
 
 def random_char(n)->str:
     """
     Generate character random
     """
-    return ''.join(random.choice(string.ascii_letters+string.digits+string.punctuation) for _ in range(n))
+    chars = string.ascii_letters + string.digits + string.punctuation
+
+    return ''.join(random.choice(chars) for _ in range(n))
 
 def random_digit(n)->str:
     """
@@ -25,16 +27,15 @@ def getDisk()->list[Path]:
     Get local disk
     """
     # Windows
-    path = []
     if name == 'nt':
-        for drive in string.ascii_uppercase:
-            if Path(f"{drive}:/").exists():
-                path.append(f"{drive}:")
+        return [
+            Path(f"{drive}:/")
+            for drive in string.ascii_uppercase
+            if Path(f"{drive}:/").exists()
+        ]
 
-        return path
     # Linux
-    else:
-        return [Path('/')]
+    return [Path('/')]
 
 
 def getTimeFile(path: Path|str)->str:
@@ -73,10 +74,10 @@ def getPermissionFile(path: Path|str):
     Permission of path
     """
     perms = {'r': False, 'w': False, 'e': False}
+    path_obj = Path(path)
 
     try:
-        path_obj = Path(path)
-
+        
         if not path_obj.exists():
             return perms
 
@@ -141,13 +142,13 @@ def get_folder_size_bytes(path:Path|str)->int:
     """
     total=0
     try:
-        for root in path.rglob("*"):
+        for root in Path(path).rglob("*"):
             try:
                 if root.is_file():
                     total+=root.stat().st_size
-            except Exception:
+            except (PermissionError, OSError , ValueError):
                 continue
-    except Exception:
+    except (PermissionError, OSError , ValueError):
         pass
     
     return total
@@ -219,3 +220,28 @@ def getFiles(path: Path|str='.')->Generator[dict,None,None]:
                 continue
 
         yield files
+
+
+
+def sanitize_filename(filename: str | None) -> str:
+    """
+    Sanitize a filename to prevent path traversal and remove unsafe characters.
+    """
+
+    if not filename:
+        return "unnamed_file"
+        
+    filename = Path(filename).name
+    
+    filename = filename.replace('\x00', '')
+    
+    filename = re.sub(r'[^\w\-.]', '_', filename)
+    
+    filename = filename.strip('_.')
+    
+    filename = filename[:255]
+    
+    if not filename:
+        return "unnamed_file"
+        
+    return filename

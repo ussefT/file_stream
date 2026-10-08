@@ -5,6 +5,8 @@ import os
 import aiofiles
 import utils
 
+from logger import logger
+
 from fastapi import (
     APIRouter,
     File,
@@ -25,23 +27,21 @@ router =APIRouter(tags=['template'])
 
 
 BASE_DIR=Path(__file__).resolve().parent
+TEMPLATES_DIR= BASE_DIR.parent / "templates"
 # init template
-templates = Jinja2Templates(directory=str(BASE_DIR / 'templates'))
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # PATH_HOME
 _env_root = os.getenv("APP_ROOT")
 if _env_root:
      PATH_HOME = Path(_env_root).resolve()
 else:
-     desktop = Path.home() / "Desktop"
-     PATH_HOME = desktop if desktop.exists() else Path.home()
-
-try:
-    home = Path.home()
-except RuntimeError:
-    home = Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/data")
-desktop = home / "Desktop"
-PATH_HOME = desktop if desktop.exists() else home
+    try:
+        home = Path.home()
+    except RuntimeError:
+        home = Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/data")
+    desktop = home / "Desktop"
+    PATH_HOME = desktop if desktop.exists() else home
 
 
 async def permission_check(
@@ -57,8 +57,8 @@ async def permission_check(
     permission = permission or {"r":"read"}
     path = Path(path).resolve()
 
-    home_cmp = os.path.normcase(str(PATH_HOME))
-    path_cmp = os.path.normcase(str(path))
+    home_cmp = Path(os.path.normcase(str(PATH_HOME)))
+    path_cmp = Path(os.path.normcase(str(path)))
 
     if not path_cmp.is_relative_to(home_cmp):
          raise HTTPException(
@@ -147,8 +147,10 @@ async def dir(request: Request,full_path:str=fastPath(...,description="Full file
     if full_path:
         
                 # clear url from %
-
                 path=Path(unquote(full_path))
+
+                if not path.is_absolute():
+                     path = Path("/") / path
 
                 path_result=await permission_check(
                     path=path,permission={"r":"read"}
@@ -157,10 +159,13 @@ async def dir(request: Request,full_path:str=fastPath(...,description="Full file
                 # iter items in dir
                 files =next(utils.getFiles(path_result))
                 drives = utils.getDisk()
-                
+
                 return  templates.TemplateResponse(
-                    request=request, name='index.html', context={'files': files,'drives':drives, 'request': request
-                        , 'path': path})
+                    request=request, name='index.html',
+                    context={'files': files,
+                             'drives':drives,
+                              'request': request,
+                              'path': path})
                 
           
     else:
@@ -213,14 +218,18 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
     """
     # Check file is exist and is File
     if full_file:
-        file=unquote(full_file)
+        file = unquote(full_file)
+
+        if not Path(file).is_absolute():
+             file = "/" + file
+
         range_header= request.headers.get('Range')
 
         # check exist file and path is file 
         if utils.fileExists(file) and utils.isFile(file):
 
                         # full path permission
-                        full_file=await permission_check(path=full_file,permission={"r":"read"})
+                        full_file=await permission_check(path=file,permission={"r":"read"})
 
                         file_size= utils.getIntsize(file)
                         media_type= utils.getMime(file)
@@ -229,8 +238,8 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
                                 start,end= range_header.replace("bytes=","").split("-")
                                 start=int(start)
                                 end=int(end) if end else file_size-1
-                            except HTTPException:
-                                raise HTTPException(status_code=416,
+                            except ValueError:
+                                raise HTTPException(status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
                                                     detail="Bad request")
 
                             # ensure end does not exceed file size
@@ -325,7 +334,7 @@ async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...
         # free space from path
         free_bytes = shutil.disk_usage(str(upload_path)).free
 
-        safe_name= utils.sanitize_filename(Path(file.filename).name)
+        safe_name= utils.sanitize_filename(file.filename)
         
         save_path = upload_path / safe_name
         
