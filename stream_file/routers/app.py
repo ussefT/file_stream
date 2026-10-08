@@ -1,36 +1,52 @@
+import shutil
 from pathlib import Path
 from urllib.parse import unquote
-from os import name
-from fastapi import (
-    APIRouter, Request, HTTPException ,Depends,status,UploadFile,Form,File
-    )
-from fastapi import Path as fastPath
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import  (
-    HTMLResponse,StreamingResponse
-    )
-from typing import Dict
-from middleware.rate_limits import limiter 
-import shutil
+import os
 import aiofiles
 import utils
+
+from fastapi import (
+    APIRouter,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi import Path as fastPath
+from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
+from middleware.rate_limits import limiter
+
 
 # init fastapi
 router =APIRouter(tags=['template'])
 
 
+BASE_DIR=Path(__file__).resolve().parent
 # init template
-templates = Jinja2Templates(directory='templates')
+templates = Jinja2Templates(directory=str(BASE_DIR / 'templates'))
 
+# PATH_HOME
+_env_root = os.getenv("APP_ROOT")
+if _env_root:
+     PATH_HOME = Path(_env_root).resolve()
+else:
+     desktop = Path.home() / "Desktop"
+     PATH_HOME = desktop if desktop.exists() else Path.home()
 
-MAX_FILE_BYTES = 500 * 1024 * 1024          # 500MB
-USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024   # 2GB
+try:
+    home = Path.home()
+except RuntimeError:
+    home = Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or "/data")
+desktop = home / "Desktop"
+PATH_HOME = desktop if desktop.exists() else home
 
-PATH_HOME=Path.home() / "Desktop"
 
 async def permission_check(
     path: str | Path = PATH_HOME,
-    permission: Dict[str,str] | None = None,
+    permission: dict[str,str] | None = None,
 ) -> Path:
     """
     Check file or directory permissions.
@@ -39,22 +55,18 @@ async def permission_check(
         {"r": "read", "w": "write", "e": "execute"}
     """
     permission = permission or {"r":"read"}
-    path = Path(path)
+    path = Path(path).resolve()
 
-    if name == 'nt':
-        p_str = str(path)
-        if len(p_str) == 2 and p_str[1] == ':':
-            path = Path(p_str + "/")
+    home_cmp = os.path.normcase(str(PATH_HOME))
+    path_cmp = os.path.normcase(str(path))
 
-    try:
-        exists = path.exists()
-    except (PermissionError, OSError, ValueError):
-        raise HTTPException(
+    if not path_cmp.is_relative_to(home_cmp):
+         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
-        )
-
-    if not exists:
+            detail="Access denied: outside allowed root",
+         )
+    
+    if not path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Path not found"
@@ -100,11 +112,13 @@ async def welcome(request:Request):
 # home page
 @router.get('/home', response_class=HTMLResponse,status_code=status.HTTP_200_OK,tags=['Directory'])
 @limiter.limit("30/minute")
-async def home(request: Request,path:str=Depends(permission_check)):
+async def home(request: Request):
     """
     Get item in path
     """
-    
+
+    path= await  permission_check(PATH_HOME,permission={"r":"read"})
+
     # Files in current path
     files=next(utils.getFiles(path))
     
@@ -113,7 +127,11 @@ async def home(request: Request,path:str=Depends(permission_check)):
   
     return  templates.TemplateResponse(
         request=request, name='index.html',
-        context={"files": files, 'drives': drives, 'path': PATH_HOME.absolute().as_posix()},
+        context={
+                "files": files,
+                'drives': drives,
+                'path': path.as_posix()
+                },
         media_type="text/html"
     )
 
@@ -129,7 +147,8 @@ async def dir(request: Request,full_path:str=fastPath(...,description="Full file
     if full_path:
         
                 # clear url from %
-                path = unquote(full_path)
+
+                path=Path(unquote(full_path))
 
                 path_result=await permission_check(
                     path=path,permission={"r":"read"}
@@ -137,8 +156,6 @@ async def dir(request: Request,full_path:str=fastPath(...,description="Full file
 
                 # iter items in dir
                 files =next(utils.getFiles(path_result))
-                
-                
                 drives = utils.getDisk()
                 
                 return  templates.TemplateResponse(
@@ -208,19 +225,24 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
                         file_size= utils.getIntsize(file)
                         media_type= utils.getMime(file)
                         if range_header:
-                            start,end= range_header.replace("bytes=","").split("-")
-                            start=int(start)
-                            end=int(end) if end else file_size-1
+                            try:
+                                start,end= range_header.replace("bytes=","").split("-")
+                                start=int(start)
+                                end=int(end) if end else file_size-1
+                            except HTTPException:
+                                raise HTTPException(status_code=416,
+                                                    detail="Bad request")
 
                             # ensure end does not exceed file size
                             if end >=file_size:
                                 end=file_size-1
-                                
+
+                            fname=utils.fileName(file)
                             headers={
                                 "Content-Range": f"bytes={start}-{end}/{file_size}",
                                 "Accept-Ranges": "bytes",
                                 "Content-Length": str((end-start)+1),
-                                "Content-Disposition":f"attachment; filename={utils.fileName(file)}",
+                                "Content-Disposition":f"attachment; filename={fname}; filename*=UTF-8\'\'{unquote(fname)}'",
                             }
 
                             
@@ -249,7 +271,13 @@ async def play(request: Request, full_file: str=fastPath(...,description="file f
     
 
 def file_dublicate(des:Path|str,mode:str="reanme")->Path:
-    
+    """
+    Handle duplicate destination.
+    mode: "overwrite", "reject", "rename"
+    """
+
+    des = Path(des)
+
     if not des.exists() :
         return des
     
@@ -296,8 +324,10 @@ async def upload_dur(request:Request,file:UploadFile=File(...),path:str=Form(...
 
         # free space from path
         free_bytes = shutil.disk_usage(str(upload_path)).free
+
+        safe_name= utils.sanitize_filename(Path(file.filename).name)
         
-        save_path = upload_path / file.filename
+        save_path = upload_path / safe_name
         
         # normalize file
         final_path=file_dublicate(save_path)

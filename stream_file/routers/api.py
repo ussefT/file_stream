@@ -1,8 +1,7 @@
+from auth.gen_auth import get_token
 from fastapi import APIRouter, Depends
-from fastapi import Request,Header
 from fastapi.responses import JSONResponse
 from utils import getFiles
-from auth.gen_auth import get_token
 
 router=APIRouter(tags=['API'],prefix="/api")
 

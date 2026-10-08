@@ -1,8 +1,6 @@
-from fastapi.security import OAuth2PasswordBearer
+from auth.gen_auth import create_access_token
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from fastapi.requests import Request
-from auth.gen_auth import create_access_token
 from utils import random_digit
 
 router=APIRouter(prefix="/token",tags=["token"])

@@ -1,11 +1,12 @@
+import mimetypes
+import random
 import stat
 import string
+from collections.abc import Generator
 from datetime import datetime
-from os import name, access, R_OK, W_OK, X_OK
+from os import R_OK, W_OK, X_OK, access, name
 from pathlib import Path
-from typing import Generator
-import random
-import mimetypes
+
 
 def random_char(n)->str:
     """
@@ -122,7 +123,7 @@ def fileExists(path: Path|str):
     """
     return Path(path).exists()
 
-def isFile(path:str|str):
+def isFile(path:str):
     """
     Check path is file
     """

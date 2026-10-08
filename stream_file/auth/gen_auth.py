@@ -1,10 +1,10 @@
-from fastapi import HTTPException,Depends,status,Security
+from datetime import datetime, time, timedelta, timezone
+
+from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
-from typing import Optional
-from datetime import time,timedelta
-from datetime import datetime
-from jose import jwt,JWTError
+from jose import JWTError, jwt
 from utils import random_char
+
 SECRECT_KEY=random_char(10)
 ALGORITHM="HS256"
 
@@ -12,12 +12,12 @@ oauth2_schema=APIKeyHeader(
     name="token"
 )
 
-def create_access_token(data:dict,expire_delta:Optional[time]=None):
+def create_access_token(data:dict,expire_delta:time | None=None):
     to_encode=data.copy()
     if expire_delta:
-        expire=datetime.utcnow()+expire_delta
+        expire=datetime.datatime.now(timezone.utc) + (expire_delta or timedelta(minutes=15))
     else:
-        expire=datetime.utcnow()+timedelta(minutes=15)
+        expire=datetime.datatime.now(timezone.utc) + (expire_delta or timedelta(minutes=15))
     to_encode.update({"exp":expire})
     encode_jwt=jwt.encode(to_encode,SECRECT_KEY,algorithm=ALGORITHM)
     return encode_jwt
